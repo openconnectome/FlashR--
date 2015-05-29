@@ -10,3 +10,4 @@ The organization is as follows:
 - infer: estimate graphs from the kind of data we care about
 - stats: compute test statistics to test different hypotheses
 - unittest: test all the functions we wrote
+- utils: other functions useful for various things
