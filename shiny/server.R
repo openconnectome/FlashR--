@@ -118,7 +118,23 @@ observe({
         format <- ex
       }
      t1 <- system.time( 
-        g <- read.graph(file,format=format))
+        if(grepl("\\.zip$",file)){
+           progress <- Progress$new(session,min=1,max=10)
+           on.exit(progress$close())
+           progress$set(message = 'Download in progress',
+                     detail='This may take a while...')
+           progress$set(value=NULL)
+           tf <- paste(tempfile(),"zip",sep='.')
+           t2 <- system.time(download.file(file,tf))
+           print(t2)
+           progress$set(message = 'Reading in graph',
+                     detail='This too may take a while...')
+           g <- read.graph(unz(tf,sub("\\.zip","",input$openconnectome)),
+                           format=format)
+        } else {
+           g <- read.graph(file,format=format)
+        }
+     )
         cat("File read\n")
         print(t1)
      vertexLabels <- union("None",list.vertex.attributes(g))
