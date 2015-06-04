@@ -1,4 +1,35 @@
 
+computeInvariants <- function(g)
+{
+   cat("Computing Invariants:\n")
+   inv <- data.frame(Invariants=invariants$Invariant,
+                     Values=rep(0.0,nrow(invariants)),
+                     Timings=rep(0.0,nrow(invariants)),
+                     stringsAsFactors=FALSE)
+   for(i in 1:nrow(invariants)){
+      cat("Computing",invariants$Function[i],"\n")
+      t1 <- system.time(inv[i,2] <- 
+          round(do.call(invariants$Function[i],args=list(g=g))),3)
+      inv[i,3] <- round(t1['elapsed'],3)
+      cat("\t",inv[i,2],inv[i,3],"\n")
+   }
+   datatable(inv,rownames=FALSE)
+}
+
+fastPlot <- function(g,layout,alpha)
+{
+   plot(layout,pch=20,axes=FALSE,xlab="",ylab="")
+   edges <- get.edgelist(g,names=FALSE)
+   col <- alpha('black',alpha)
+   if(is.directed(g)){
+      arrows(layout[edges[,1],1],layout[edges[,1],2],
+             layout[edges[,2],1],layout[edges[,2],2],length=0.1,col=col)
+   } else {
+      segments(layout[edges[,1],1],layout[edges[,1],2],
+             layout[edges[,2],1],layout[edges[,2],2],col=col)
+   }
+   points(layout,pch=20,col=2)
+}
 
 graph.spectral.embedding <- function(graph=g,no=2,
    cvec = degree(graph)/(vcount(graph) - 1))
@@ -44,11 +75,13 @@ getLayout <- function(g,input)
      layout <- layout.kamada.kawai(g,niter=input$KKniter,
                                           inittemp=input$KKinittemp,
                                           coolexp=input$KKcoolexp)
-  } else if(input$plotMethod=='Coordinates'){
-     if(input$linegraph == FALSE){
-        layout <- getData(input)
+  } else if(layout =='layout.coordinates'){
+     x <- get.vertex.attribute(g,'x')
+     if(!is.null(x)){
+        y <- get.vertex.attribute(g,'y')
+        layout <- cbind(x,y)
      } else {
-        layout <- layout.auto
+        layout <- layout.auto(g,dim=2)
      }
   } else {
      layout <- get(layout)
@@ -59,20 +92,47 @@ getLayout <- function(g,input)
 
 ### Main shinyServer function
 shinyServer(function(input, output, session) {
+
+observe({
+   cat("Open Connectome graph:",input$openconnectome,"\n")
+})
    
   gGraph <- reactive({
      g <- NULL
-     if(!is.null(input$graphFile)){
-        g <- read.graph(input$graphFile$datapath,format="graphml")
-        vertexLabels <- c("None",list.vertex.attributes(g))
-        updateSelectInput(session,inputId="vertexLabel",
-            choices=vertexLabels,selected="None")
-        edgeLabels <- c("None",list.edge.attributes(g))
-        updateSelectInput(session,inputId="edgeLabel",
-            choices=edgeLabels,selected="None")
-        updateSelectInput(session,inputId="edgeColor",
-            choices=edgeLabels,selected="None")
+     cat("Graph:",input$openconnectome,"\n")
+     file <- openconnectome.dir
+     for(i in 1:length(openconnectome.graphs)){
+        if(any(openconnectome.graphs[[i]] == input$openconnectome)){
+           file <- paste(file,names(openconnectome.graphs)[i],"/",
+                         input$openconnectome,sep="")
+           break
+        }
      }
+     cat("Getting",file,"\n")
+     format <- "graphml"
+     ex <- rev(strsplit(gsub(".zip","",input$openconnectome),
+                        split="\\.")[[1]])[[1]]
+     cat("File Extension:",ex,"\n")
+     if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
+                  "graphml", "dimacs", "graphdb", "gml", "dl")){
+        format <- ex
+      }
+     t1 <- system.time( 
+        g <- read.graph(file,format=format))
+        cat("File read\n")
+        print(t1)
+     vertexLabels <- union("None",list.vertex.attributes(g))
+     updateSelectInput(session,inputId="vertexLabel",
+         choices=vertexLabels,selected="None")
+     updateSelectInput(session,inputId="vertexAtts",
+         choices=vertexLabels,selected="None")
+     edgeLabels <- union("None",list.edge.attributes(g))
+     updateSelectInput(session,inputId="edgeLabel",
+         choices=edgeLabels,selected="None")
+     updateSelectInput(session,inputId="edgeColor",
+         choices=edgeLabels,selected="None")
+     updateSelectInput(session,inputId="edgeAtts",
+         choices=edgeLabels,selected="None")
      g
   })
 
@@ -86,31 +146,69 @@ shinyServer(function(input, output, session) {
      g <- gGraph()
      if(!is.null(g)){
         x <- layout()
-        vl <- input$vertexLabel
-        if(vl=='None') vl <- NA
-        else vl <- get.vertex.attribute(g,vl)
-        el <- input$edgeLabel
-        if(el=='None') el <- NA
-        else el <- get.edge.attribute(g,el)
-        weight <- 1
-        if(input$useWeights) {
-           if('weight' %in% list.edge.attributes(g)){
-              weight <- get.edge.attribute(g,'weight')
-           }
-        }
-        color <- 1
-        ec <- input$edgeColor
-        if(ec=='None') {
-           ec <- 1
+        if(input$fast){
+           fastPlot(g,x,input$alpha)
         } else {
-           att <- get.edge.attribute(g,ec)
-           uatt <- unique(att)
-           ec <- ((match(att,uatt)-1) %% 8) + 1
+           vl <- input$vertexLabel
+           if(vl=='None') vl <- NA
+           else vl <- get.vertex.attribute(g,vl)
+           el <- input$edgeLabel
+           if(el=='None') el <- NA
+           else el <- get.edge.attribute(g,el)
+           weight <- 1
+           if(input$useWeights) {
+              if('weight' %in% list.edge.attributes(g)){
+                 weight <- get.edge.attribute(g,'weight')
+              }
+           }
+           color <- 1
+           ec <- input$edgeColor
+           if(ec=='None') {
+              ec <- 1
+           } else {
+              att <- get.edge.attribute(g,ec)
+              uatt <- unique(att)
+              ec <- ((match(att,uatt)-1) %% 8) + 1
+           }
+           plot(g,vertex.size=input$vertexSize,vertex.label=vl,
+                edge.width=weight,edge.label=el,
+                edge.color=ec,
+                layout=x)
         }
-        plot(g,vertex.size=input$vertexSize,vertex.label=vl,
-             edge.width=weight,edge.label=el,
-             edge.color=ec,
-             layout=x)
+     }
+  })
+
+  output$plotVA <- renderPlot({  
+     g <- gGraph()
+     if(!is.null(g)){
+        if(input$vertexAtts != 'None'){
+           a <- get.vertex.attribute(g,input$vertexAtts)
+           ta <- table(a)
+           ta <- sort(ta,decreasing=TRUE)
+           m <- min(30,length(ta))
+           ta <- rev(ta[1:m])
+           mar <- par('mar')
+           par(mar=c(2,7,2,2))
+           barplot(ta,horiz=TRUE,names=names(ta),xlab="",las=2,cex.axis=.75)
+           par(mar=mar)
+        }
+     }
+  })
+
+  output$plotEA <- renderPlot({  
+     g <- gGraph()
+     if(!is.null(g)){
+        if(input$edgeAtts != 'None'){
+           a <- get.edge.attribute(g,input$edgeAtts)
+           ta <- table(a)
+           ta <- sort(ta,decreasing=TRUE)
+           m <- min(30,length(ta))
+           ta <- rev(ta[1:m])
+           mar <- par('mar')
+           par(mar=c(2,7,2,2))
+           barplot(ta,horiz=TRUE,names=names(ta),xlab="",las=2,cex.axis=.75)
+           par(mar=mar)
+        }
      }
   })
 
@@ -154,6 +252,9 @@ shinyServer(function(input, output, session) {
         } else if(input$invariants=='Betweenness'){
            plot(betweenness(g),xlab="Vertex",
                 ylab="Betweenness",pch=20)
+        } else if(input$invariants=="Burt's Constraint"){
+           plot(constraint(g),xlab="Vertex",
+                ylab="Burt's Constraint",pch=20)
         } else if(input$invariants=='Eigenvalue Centrality'){
            plot(evcent(g)$vector,xlab="Vertex",
                 ylab="Eigenvalue Centrality",pch=20)
@@ -176,27 +277,11 @@ shinyServer(function(input, output, session) {
 
   output$mytable <- DT::renderDataTable({
       g <- gGraph()
-      cl <- clusters(g)
-      nc <- cl$no
-      nc1 <- max(cl$csize)
-      s <- ecount(g)
-      inv <- data.frame(Invariant=c("Order","Size",
-                                    "#Components","Max Component Size",
-                                    "Diameter","Girth",
-                                    "Density",
-                                    "Average Path Length",
-                                    "Centralization Degree",
-                                    "Reciprocity"),
-                      Value=c(vcount(g),ecount(g),
-                              nc,nc1,
-                              diameter(g),girth(g)$girth,
-                              round(graph.density(g),3),
-                              round(average.path.length(g),3),
-                              round(centralization.degree(g)$centralization,3),
-                              ifelse(is.directed(g),
-                                     round(reciprocity(g),3),"NA")),
-                      stringsAsFactors=FALSE)
-      datatable(inv,rownames=FALSE)
+      d <- NULL
+      if(!is.null(g)){
+         d <- computeInvariants(g)
+      }
+      d
   })
 
   output$graphAtt <- DT::renderDataTable({

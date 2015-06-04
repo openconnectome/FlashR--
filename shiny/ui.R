@@ -7,20 +7,52 @@ shinyUI(pageWithSidebar(
   ### Sidebar with text box for input search term
   sidebarPanel(
   p("Select a graph to load. Currently only graphml formats are supported."),
-  fileInput(inputId="graphFile",label="File",accept="graphml")
+  #fileInput(inputId="graphFile",label="File",accept="graphml"),
+  selectInput(inputId="openconnectome",
+                                 label="Open Connectome Graph",
+                     choices=openconnectome.graphs,
+                     selected=openconnectome.graphs$worm[[1]],
+                     selectize=TRUE)
   ),
   ### Main Panel
   mainPanel(
     tabsetPanel(
       tabPanel("Attributes",
+       tabsetPanel(
+            tabPanel("Graphical",
+            wellPanel(
+               fluidRow(
+                  column(6,
+                     h3("Vertex Attributes"),
+                     selectInput(inputId="vertexAtts",
+                                 label="Attribute to plot",
+                     choices='None',selected='None',selectize=FALSE),
+                     plotOutput("plotVA", height="250px")),
+                  column(6,
+                     h3("Edge Attributes"),
+                     selectInput(inputId="edgeAtts",label="Attribute to plot",
+                     choices='None',selected='None',selectize=FALSE),
+                     plotOutput("plotEA", height="250px"))))
+            ),
+         tabPanel("Tabular",
+      p("Tables of attributes. Note that for large graphs an error may be thrown due to the limitations of the datatable."),
+     p("It can take a while to load larger graphs, particularly ones with lots of attributes."),
+            wellPanel(
+               fluidRow(
          h3("Graph Attributes"),
-         DT::dataTableOutput("graphAtt",width='50%'),
+         DT::dataTableOutput("graphAtt")
+         ),
+         fluidRow(
          h3("Vertex Attributes"),
-         DT::dataTableOutput("vertexAtt"),
+         DT::dataTableOutput("vertexAtt")
+         ),
+         fluidRow(
          h3("Edge Attributes"),
          DT::dataTableOutput("edgeAtt")
-      ),
+         )))
+      )),
       tabPanel("Graph",
+         p("Plotting the graph may take a long time unless the fast plotting option is checked."),
          selectInput(inputId="plotMethod",label="Plot Method",
             choices=plot.methods,selected=plot.methods[1],selectize=FALSE),
             sliderInput(inputId='vertexSize',
@@ -70,6 +102,15 @@ shinyUI(pageWithSidebar(
          selectInput(inputId="edgeColor",label="Color Edges by",
             choices="None",selected="None",selectize=FALSE),
           checkboxInput('useWeights',"Weight Edges",FALSE),
+          checkboxInput('fast',"Fast Plotting",TRUE),
+         conditionalPanel(
+              condition = "input.fast == true",
+              sliderInput(inputId="alpha",label="Alpha Level",
+                      min=0,max=.2,value=0.05,step=0.01)
+         ),
+         bsTooltip(id='fast',
+             title="Fast plotting only plots vertices and edges, no attributes or colors.",
+                   placement='top'),
          plotOutput("plotgraph", height="800px")
       ),
       tabPanel("Invariants",
@@ -78,7 +119,7 @@ shinyUI(pageWithSidebar(
                DT::dataTableOutput("mytable",width='50%')),
             tabPanel("Graphical",
                selectInput(inputId="invariants",label="Invariant to Plot",
-                      choices=invariants,selected="Degree Distribution"),
+                      choices=plot.invariants,selected="Degree Distribution"),
                plotOutput("plotinvariants", height="500px"),
          conditionalPanel(
               condition = "input.invariants == 'Alpha Centrality'",
