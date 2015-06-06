@@ -99,56 +99,93 @@ observe({
    
   gGraph <- reactive({
      g <- NULL
-     cat("Graph:",input$openconnectome,"\n")
-     file <- openconnectome.dir
-     for(i in 1:length(openconnectome.graphs)){
-        if(any(openconnectome.graphs[[i]] == input$openconnectome)){
-           file <- paste(file,names(openconnectome.graphs)[i],"/",
-                         input$openconnectome,sep="")
-           break
+     if(input$Source=='Local Disk'){
+        if(!is.null(input$graphFile)){
+           format <- "graphml"
+           ex <- rev(strsplit(input$graphFile$datapath,split="\\.")[[1]])[[1]]
+           cat("File Extension:",ex,"\n")
+           if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
+                        "graphml", "dimacs", "graphdb", "gml", "dl")){
+              format <- ex
+            }
+            cat("name:",input$graphFile$name,"\n")
+            cat("datapath:",input$graphFile$datapath,"\n")
+            if(grepl('\\.zip$',input$graphFile$name)){
+              tf <- input$graphFile$datapath
+              gr <- sub("\\.zip$","",input$graphFile$name)
+              t1 <- system.time(g <- read.graph(unz(tf,gr),format=format))
+            } else {
+              t1 <- system.time(g <- read.graph(input$graphFile$datapath,
+                    format=format))
+            }
+           cat("File read\n")
+           print(t1)
         }
+     } else {
+        cat("Graph:",input$openconnectome,"\n")
+        file <- openconnectome.dir
+        for(i in 1:length(openconnectome.graphs)){
+           if(any(openconnectome.graphs[[i]] == input$openconnectome)){
+              file <- paste(file,names(openconnectome.graphs)[i],"/",
+                            input$openconnectome,sep="")
+              break
+           }
+        }
+        cat("Getting",file,"\n")
+        format <- "graphml"
+        ex <- rev(strsplit(gsub(".zip","",input$openconnectome),
+                           split="\\.")[[1]])[[1]]
+        cat("File Extension:",ex,"\n")
+        if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
+                     "graphml", "dimacs", "graphdb", "gml", "dl")){
+           format <- ex
+         }
+        t1 <- system.time( 
+           if(grepl("\\.zip$",file)){
+              progress <- Progress$new(session,min=1,max=10)
+              on.exit(progress$close())
+              progress$set(message = 'Download in progress',
+                        detail='This may take a while...')
+              progress$set(value=1)
+              tf <- paste(tempfile(),"zip",sep='.')
+              t2 <- system.time(download.file(file,tf))
+              print(t2)
+              wd <- getwd()
+              setwd(tempdir())
+              gr <- sub("\\.zip$","",input$openconnectome)
+              progress$set(message = 'Unzipping graph')
+              cat("unzipping",tf,"extracting",gr,"\n")
+              unzip(tf,gr)
+              unlink(tf)
+              progress$set(value=3)
+              progress$set(message = 'Reading in graph',
+                        detail='This too may take a while...')
+              cat("reading",gr,"\n")
+              t2 <- system.time(g <- read.graph(gr,format=format))
+              print(t2)
+              unlink(gr)
+              setwd(wd)
+           } else {
+              g <- read.graph(file,format=format)
+           }
+        )
+           cat("File read\n")
+           print(t1)
      }
-     cat("Getting",file,"\n")
-     format <- "graphml"
-     ex <- rev(strsplit(gsub(".zip","",input$openconnectome),
-                        split="\\.")[[1]])[[1]]
-     cat("File Extension:",ex,"\n")
-     if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
-                  "graphml", "dimacs", "graphdb", "gml", "dl")){
-        format <- ex
-      }
-     t1 <- system.time( 
-        if(grepl("\\.zip$",file)){
-           progress <- Progress$new(session,min=1,max=10)
-           on.exit(progress$close())
-           progress$set(message = 'Download in progress',
-                     detail='This may take a while...')
-           progress$set(value=NULL)
-           tf <- paste(tempfile(),"zip",sep='.')
-           t2 <- system.time(download.file(file,tf))
-           print(t2)
-           progress$set(message = 'Reading in graph',
-                     detail='This too may take a while...')
-           g <- read.graph(unz(tf,sub("\\.zip","",input$openconnectome)),
-                           format=format)
-        } else {
-           g <- read.graph(file,format=format)
-        }
-     )
-        cat("File read\n")
-        print(t1)
-     vertexLabels <- union("None",list.vertex.attributes(g))
-     updateSelectInput(session,inputId="vertexLabel",
-         choices=vertexLabels,selected="None")
-     updateSelectInput(session,inputId="vertexAtts",
-         choices=vertexLabels,selected="None")
-     edgeLabels <- union("None",list.edge.attributes(g))
-     updateSelectInput(session,inputId="edgeLabel",
-         choices=edgeLabels,selected="None")
-     updateSelectInput(session,inputId="edgeColor",
-         choices=edgeLabels,selected="None")
-     updateSelectInput(session,inputId="edgeAtts",
-         choices=edgeLabels,selected="None")
+     if(!is.null(g)){
+        vertexLabels <- union("None",list.vertex.attributes(g))
+        updateSelectInput(session,inputId="vertexLabel",
+            choices=vertexLabels,selected="None")
+        updateSelectInput(session,inputId="vertexAtts",
+            choices=vertexLabels,selected="None")
+        edgeLabels <- union("None",list.edge.attributes(g))
+        updateSelectInput(session,inputId="edgeLabel",
+            choices=edgeLabels,selected="None")
+        updateSelectInput(session,inputId="edgeColor",
+            choices=edgeLabels,selected="None")
+        updateSelectInput(session,inputId="edgeAtts",
+            choices=edgeLabels,selected="None")
+     }
      g
   })
 
