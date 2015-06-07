@@ -137,7 +137,7 @@ getLayout <- function(g,input)
         layout <- layout.auto(g,dim=2)
      }
   } else {
-     layout <- get(layout)
+     layout <- get(layout)(g)
   }
   layout
 
