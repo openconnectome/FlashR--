@@ -102,7 +102,17 @@ observe({
 
   layout <- reactive({
      g <- gGraph()
-     getLayout(g,input)
+     getLayout(g, 
+               plotMethod=input$plotMethod, 
+               u=input$u, 
+               FRniter=input$FRniter,
+               FRcoolexp=input$FRcoolexp, 
+               circular=input$circular, 
+               star.center=input$star.center,
+               n=input$n, 
+               KKniter=input$KKniter, 
+               KKinittemp=input$KKinittemp, 
+               KKcoolexp=input$KKcoolexp)
   })
 
   ### Generate plot output
@@ -111,7 +121,7 @@ observe({
      if(!is.null(g)){
         x <- layout()
         if(input$fast){
-           fastPlot(g,x,input$alphaLevel)
+           fastPlot(g,x,input$UseAlpha,input$alphaLevel)
         } else {
            vl <- input$vertexLabel
            if(vl=='None') vl <- NA
@@ -134,11 +144,20 @@ observe({
               uatt <- unique(att)
               ec <- ((match(att,uatt)-1) %% 8) + 1
            }
+           if(input$UseAlpha) ec <- alpha(ec,input$alphaLevel)
            plot(g,vertex.size=input$vertexSize,vertex.label=vl,
                 edge.width=weight,edge.label=el,
                 edge.color=ec,
                 layout=x)
         }
+     }
+  })
+
+  output$plotgraph3d <- renderWebGL({  
+     g <- gGraph()
+     if(!is.null(g)){
+        x <- layout()
+        fastPlot3D(g,x)
      }
   })
 

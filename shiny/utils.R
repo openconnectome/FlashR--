@@ -69,11 +69,15 @@ computeInvariants <- function(g,invariantList)
    datatable(inv,rownames=FALSE)
 }
 
-fastPlot <- function(g,layout,alpha)
+fastPlot <- function(g,layout,use.alpha,alpha)
 {
    plot(layout,pch=20,axes=FALSE,xlab="",ylab="")
    edges <- get.edgelist(g,names=FALSE)
-   col <- alpha('black',alpha)
+   if(use.alpha){
+      col <- alpha('black',alpha)
+   } else {
+      col <- 1
+   }
    if(is.directed(g)){
       arrows(layout[edges[,1],1],layout[edges[,1],2],
              layout[edges[,2],1],layout[edges[,2],2],length=0.1,col=col)
@@ -84,6 +88,15 @@ fastPlot <- function(g,layout,alpha)
    points(layout,pch=20,col=2)
 }
 
+fastPlot3D <- function(g,layout)
+{
+   if(ncol(layout)==2) layout <- cbind(layout,rep(0,nrow(layout)))
+   plot3d(layout,axes=FALSE,xlab="",ylab="",zlab="",box=FALSE)
+   #edges <- get.edgelist(g,names=FALSE)
+   #segments3d(layout[edges[,1],1],layout[edges[,1],2],layout[edges[,1],3],
+   #          layout[edges[,2],1],layout[edges[,2],2],layout[edges[,2],3])
+}
+
 graph.spectral.embedding <- function(graph=g,no=2,
    cvec = degree(graph)/(vcount(graph) - 1))
 {
@@ -92,42 +105,44 @@ graph.spectral.embedding <- function(graph=g,no=2,
 	svds(B,k=no)
 }
 
-getLayout <- function(g,input)
+getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
+    circular, star.center,
+   n, KKniter, KKinittemp, KKcoolexp)
 {
   if(is.null(g)) return(NULL)
-  layout <- paste('layout',gsub(" ",".",tolower(input$plotMethod)),
+  layout <- paste('layout',gsub(" ",".",tolower(plotMethod)),
                   sep=".")
   if(layout == 'layout.auto'){
      layout <- layout.auto(g,dim=2)
   } else if(layout == 'layout.laplacian'){
      A <- graph.laplacian(as.undirected(g,mode='collapse'))
-     z <- eigs(A,k=3,which="SM")
+     z <- eigs(A,k=4,which="SM")
      d <- rev(z$values)
      layout <- z$vectors[,(length(d)-1):1]
   } else if(layout == 'layout.rdpg'){
-     z <- graph.spectral.embedding(g)
-     if(input$u=="U") {
+     z <- graph.spectral.embedding(g,no=3)
+     if(u=="U") {
         x <- z$u
-     } else if(input$u=="V"){
+     } else if(u=="V"){
         x <- z$v
      } else {
         x <- cbind(z$u[,1],z$v[,1])
      }
      layout <- x
   } else if(layout == 'layout.fruchterman.reingold'){
-     layout <- layout.fruchterman.reingold(g,niter=input$FRniter,
-                                          coolexp=input$FRcoolexp)
+     layout <- layout.fruchterman.reingold(g,niter=FRniter,
+                                          coolexp=FRcoolexp)
   } else if(layout == 'layout.fruchterman.reingold.grid'){
-     layout <- layout.fruchterman.reingold.grid(g,niter=input$FRniter,
-                                          coolexp=input$FRcoolexp)
+     layout <- layout.fruchterman.reingold.grid(g,niter=FRniter,
+                                          coolexp=FRcoolexp)
   } else if(layout == 'layout.reingold.tilford'){
-     layout <- layout.reingold.tilford(g,circular=input$circular)
+     layout <- layout.reingold.tilford(g,circular=circular)
   } else if(layout == 'layout.star'){
-     layout <- layout.star(g,center=min(input$star.center,input$n))
+     layout <- layout.star(g,center=min(star.center,n))
   } else if(layout == 'layout.kamada.kawai'){
-     layout <- layout.kamada.kawai(g,niter=input$KKniter,
-                                          inittemp=input$KKinittemp,
-                                          coolexp=input$KKcoolexp)
+     layout <- layout.kamada.kawai(g,niter=KKniter,
+                                          inittemp=KKinittemp,
+                                          coolexp=KKcoolexp)
   } else if(layout =='layout.coordinates'){
      x <- get.vertex.attribute(g,'x')
      if(!is.null(x)){

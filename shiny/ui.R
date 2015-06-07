@@ -102,23 +102,31 @@ shinyUI(pageWithSidebar(
                  selectInput(inputId="KKcoolexp",label="Cooling exponent",
                       choices=c(0.1,0.5,0.99,1,3,5,10),selected=0.99)
          ),
+         checkboxInput('fast',"Fast Plotting",TRUE),
+         conditionalPanel(
+              condition = "input.fast == false",
          selectInput(inputId="vertexLabel",label="Vertex Label",
             choices="None",selected="None",selectize=FALSE),
          selectInput(inputId="edgeLabel",label="Edge Label",
             choices="None",selected="None",selectize=FALSE),
          selectInput(inputId="edgeColor",label="Color Edges by",
             choices="None",selected="None",selectize=FALSE),
-          checkboxInput('useWeights',"Weight Edges",FALSE),
-          checkboxInput('fast',"Fast Plotting",TRUE),
+          checkboxInput('useWeights',"Weight Edges",FALSE)),
+          checkboxInput('UseAlpha',"Use Alpha Blending",TRUE),
          conditionalPanel(
-              condition = "input.fast == true",
+              condition = "input.UseAlpha == true",
               sliderInput(inputId="alphaLevel",label="Alpha Level",
-                      min=0.0005,max=.1,value=0.005,step=0.0005)
+                      min=0.0005,max=.25,value=0.005,step=0.0005)
          ),
          bsTooltip(id='fast',
              title="Fast plotting only plots vertices and edges, no attributes or colors.",
                    placement='top'),
-         plotOutput("plotgraph", height="800px")
+         tabsetPanel(
+            tabPanel("2D",
+                     plotOutput("plotgraph", height="800px")),
+            tabPanel("3D",
+                     webGLOutput("plotgraph3d", height="400px"))
+         )
       ),
       tabPanel("Invariants",
           tabsetPanel(

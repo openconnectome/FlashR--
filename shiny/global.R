@@ -1,5 +1,7 @@
 library(igraph)
+library(rgl)
 library(shinyBS)
+library(shinyRGL)
 library(scrapeR)
 library(rARPACK)
 library(Matrix)
