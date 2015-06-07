@@ -112,7 +112,7 @@ shinyUI(pageWithSidebar(
           checkboxInput('fast',"Fast Plotting",TRUE),
          conditionalPanel(
               condition = "input.fast == true",
-              sliderInput(inputId="alpha",label="Alpha Level",
+              sliderInput(inputId="alphaLevel",label="Alpha Level",
                       min=0.0005,max=.1,value=0.005,step=0.0005)
          ),
          bsTooltip(id='fast',

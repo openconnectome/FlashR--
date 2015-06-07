@@ -111,7 +111,7 @@ observe({
      if(!is.null(g)){
         x <- layout()
         if(input$fast){
-           fastPlot(g,x,input$alpha)
+           fastPlot(g,x,input$alphaLevel)
         } else {
            vl <- input$vertexLabel
            if(vl=='None') vl <- NA
