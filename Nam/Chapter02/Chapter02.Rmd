@@ -1,0 +1,382 @@
+---
+title: "Graph Inference via Canonical Correlation Analysis"
+author: "LVP"
+date: "Sunday, November 23, 2014"
+output: 
+    html_document:
+        toc: true
+        theme: united
+
+bibliography: ~/bibfiles/statisticalnetwork.bib
+---
+
+
+Parametric version -- Wilk's Lambda
+-----------------------
+
+Consider a graph on $n$ vertices.  
+
+```{r loading preamble, echo=FALSE, warning=FALSE,message=FALSE, results='hide',cache=TRUE}
+require(igraph)
+require(ggplot2)
+require(GGally)
+require(CCA)
+require(gclust)
+require(doMC)
+require(foreach)
+
+registerDoMC(22)
+```
+
+```{r loading data, echo=TRUE, cache=TRUE,fig.align='center'}
+rm(list=ls())
+load('CelegansData.RData')
+attach(CelegansData)
+Gc = graph.adjacency(Ac,weighted = TRUE, mode = 'max')
+Ge = graph.adjacency(Ae,weighted = TRUE, mode = 'max')
+
+Ac = get.adjacency(Gc)
+Ae = get.adjacency(Ge)
+image(Ac)
+image(Ae)
+```
+
+
+
+```{r cca o ase, echo=TRUE, fig.align='center',cache=TRUE}
+dimc = 10
+dime = 10
+Xc = adjacency.spectral.embedding(Gc,no = dimc)$X
+Xe = adjacency.spectral.embedding(Ge,no = dime)$X
+
+#ggpairs(Xc)
+#ggpairs(Xe)
+
+cc1 <- cc(Xc,Xe)
+cc1$cor
+```
+
+
+When choosing the _dimension_ of the model, a popular technique is to a likelihood ratio test
+for $H_0: \Sigma_{12} = 0$ versus $H_1: \Sigma_{12} \neq 0$, where $\Sigma_{12}$ represents 
+an off-diagonal block of the correlation matrix of the canonical covariates.  For a detailed 
+discussion, we refer the reader to [@johnson2002applied, pp. 569-571], but we give a brief 
+summary.  In short, we reject 
+$H_0: \Sigma_{12} = 0$ at significance level $\alpha$ if 
+$$
+- (n-1-\frac{1}{2} (p+q+1)) \ln \prod_{i=1}^p (1 - \widehat \rho_i^2) > \chi_{pq}^2(\alpha),
+$$
+where $\chi_{pq}^2(\alpha)$ is the upper $(100\alpha)$th percentile of a chi-square distribution 
+with $pq$ d.f.  
+If the null hypothesis $H_0: \Sigma_{12} = 0 \quad (eq.~\rho_1=\cdots=\rho_p = 0)$ is rejected, 
+then, since the canonical correlation is ordered, we can begin by assuming that 
+the first canonical correlation is nonzero and the remaining $p-1$ canonical correlations 
+are zero. This allows us to entertain the following sequence of hypotheses: 
+$$
+\begin{aligned}
+&H_0^k: \rho_1\neq0,\cdots,\rho_k \neq 0, \rho_{k+1}=\cdots=\rho_p = 0 \\
+&H_1^k: \rho_i\neq0, \text{ for some } i \ge k+1
+\end{aligned}
+$$
+Then, for each $k$, we reject $H_0^k$ at level $\alpha$ if 
+$$
+- (n-1-\frac{1}{2} (p+q+1)) \ln \prod_{i=k+1}^p (1 - \widehat \rho_i^2) > \chi_{(p-k)(q-k)}^2(\alpha),
+$$
+where $\chi_{(p-k)(q-k)}^2(\alpha)$ is the upper $(100\alpha)$th percentile of a chi-square distribution 
+with $(p-k)(q-k)$ d.f.  The symbol \code{WilksL} in the listing below denote the __Wilks' lambda__, 
+which is a reduced form of a likelihood ratio statistic (c.f. [@johnson2002applied, pp. 217]). 
+
+```{r cca dim select, echo=FALSE, cache=TRUE}
+
+ev <- (1 - cc1$cor^2)
+
+n = nrow(Xe)
+p = dimc
+q = dime
+k <- min(dimc, dime)
+m <- n - 3/2 - (p + q)/2
+w <- rev(cumprod(rev(ev)))
+
+# initialize
+d1 <- d2 <- f <- vector("numeric", k)
+
+for (i in 1:k) {
+    s <- sqrt((p^2 * q^2 - 4)/(p^2 + q^2 - 5))
+    si <- 1/s
+    d1[i] <- p * q
+    d2[i] <- m * s - p * q/2 + 1
+    r <- (1 - w[i]^si)/w[i]^si
+    f[i] <- r * d2[i]/d1[i]
+    p <- p - 1
+    q <- q - 1
+}
+
+pv <- pf(f, d1, d2, lower.tail = FALSE)
+(dmat <- cbind(WilksL = w, F = f, df1 = d1, df2 = d2, p = round(pv,5)))
+```
+
+As shown above, the first test of the canonical correlations tests 
+whether all three dimensions are significant.  The next test tests 
+whether the second and third dimension when combined are significant.
+Finally, the last test tests whether the third dimension, by itself, 
+is significant.  The $p$-values, respectively, are, $0$, $0.00029$, and $0.98909$,
+and this suggests that the first two dimensions are significant while
+the third dimension is not significant. 
+
+```{r standardized cc,fig.align='center',cache=TRUE,echo=TRUE}
+Sc = cc1$xcoef %*% diag(sqrt(diag(cov(Xc))))
+Se = cc1$ycoef %*% diag(sqrt(diag(cov(Xe))))[1:k,1:k]
+Sc[,1:2]
+Se[,1:2]
+#plt.cc(cc1)
+```
+
+Tests of model dimesion for the canonical correlation analysis, 
+as shown earlier, indicate that two of the three canonical dimensions 
+are statistically significant at the $0.5$ level.  The first dimension
+had a canonical correlation of $0.67$ between the sets of variables,
+while for the second dimension had $0.317$.  
+
+Inspection of the standardized canonical correlation scores reveals 
+that 
+
+* for $Xc$, the first canonical variable is most influenced by 
+the first and third embedding dimensions
+* for $Xe$, the first canonical variable is most influenced by 
+the first and fourth embedding dimensions
+
+
+Non Parametric version -- Distance Correlation 
+-------------------------------------------
+Our discussion in this section follows that of [@szekely2007measuring].  We first 
+begin with a demonstrative numerical simulation experiment.  
+
+The following listings define two building blocks of the 
+distance correlation measure, with which we perform our test.  
+
+```{r non param dist corr, cache=TRUE}
+myfun <- function(X) {
+    nvertex = nrow(X)
+    dX = as.matrix(dist(X),p=ncol(X))
+    rm.dX = rowMeans(dX)
+    cm.dX = colMeans(dX)
+    gm.dX = matrix(mean(dX),nvertex,nvertex)
+    rm.dX = foreach(itr=1:nvertex,.combine='rbind') %do% { rep(rm.dX[itr],nvertex) } 
+    cm.dX = foreach(itr=1:nvertex, .combine='cbind') %do% { rep(cm.dX[itr],nvertex)}
+    
+    dX - rm.dX - cm.dX + gm.dX
+}
+
+myfun2 <- function(X) {
+    nvertex = nrow(X)
+    (as.matrix(dist(X),p=ncol(X)))
+}
+
+```
+
+In the code listing below, we perform Monte Carlo experiments 
+for a sequence of pair of observations.  First, we consider 
+the case when the pair is independent. Second, we consider 
+the case where the pair is correlated. We note that 
+by [@szekely2007measuring, Theorem 6], the test statistic has an asymptotic 
+distribution invariant to the underlying distributions under the 
+null hypothesis, i.e., the independence holds.  As such, the distribution of the independence case can be approximate with  
+the empirical distribution of the Monte Carlo replicates from the first experiment.  
+```{r non param simulation,cache=TRUE}
+set.seed(123)
+numr = 20
+numc = 1
+nmc = 100 
+
+retval.ind = foreach(mcitr=1:nmc,.combine='c',.errorhandling = 'remove') %do% {
+    Yc = matrix(rnorm(numr*numc),numr,numc)
+    Ye = matrix(rnorm(numr*numc),numr,numc)
+    nrow(Yc) * mean(myfun(Yc) * myfun(Ye))/(mean(myfun2(Yc)) * mean(myfun2(Ye)))    
+}
+
+# to introduce more noise increase the value of my.p
+my.p = 0
+retval.dep = foreach(mcitr=1:nmc,.combine='c',.errorhandling = 'remove') %do% {
+    Yc = matrix(rnorm(numr*numc),numr,numc)
+    Ye = 1.0*(Yc > 0) + matrix(sample(0:1,numc*numr,prob=c(1-my.p,my.p),replace=TRUE),numr,numc)
+    nrow(Yc) * mean(myfun(Yc) * myfun(Ye))/(mean(myfun2(Yc)) * mean(myfun2(Ye)))
+}
+```
+The things related to the independent case is coded red, and the things related to the dependent case is coded blue.  The vertical red color marks the critical value (using the empirical CDF).
+```{r non param simulation ecdf,fig.align='center'}
+plot(ecdf(retval.dep),col=rgb(0,0,1,0.1),xlim=c(0,15), main='Ind vs. Dep')
+hist((retval.dep),add=TRUE,prob=TRUE,col=rgb(0,0,1,0.05))
+plot(ecdf(retval.ind),col=rgb(1,0,0,0.1),add=TRUE)
+abline(v=quantile(retval.ind,0.975),col=rgb(1,0,0,1))
+hist((retval.ind),add=TRUE,prob=TRUE,col=rgb(1,0,0,1))
+```
+
+
+We now apply the aforementioned non-parametric tests on C.~elegan data.  
+First we apply the test on the \emph{raw} embeddings of the adjacency matrices 
+of the chemical and the electrical, and the on the \emph{canonical correlation} variables.  
+
+
+```{r non param raw data c elegan,cache=TRUE}
+mydata = data.frame(Xe=Xe,Xc=Xc)
+for(itr in 1:(dimc-1)) {
+    Yc = mydata[,(dimc-itr):dimc,drop=FALSE]
+    Ye = mydata[,(dimc+dimc-itr):(dimc+dimc),drop=FALSE]
+    Tc = myfun(Yc)
+    Te = myfun(Ye)
+    mystat = nrow(Yc) * mean(myfun(Yc) * myfun(Ye))/(mean(myfun2(Yc)) * mean(myfun2(Ye)))
+    msg = sprintf('%d:%d, %f\n', dimc-itr,dimc,mystat)
+    cat(msg)
+}
+```
+
+```{r non param cc variable c elegan,cache=TRUE}
+mydata2 = cbind(cc1$scores$xscores,cc1$scores$yscores)
+mydata2 = as.data.frame(mydata2)
+for(itr in 1:(dimc-1)) {
+    Yc = mydata2[,(dimc-itr):dimc,drop=FALSE]
+    Ye = mydata2[,(dimc+dimc-itr):(dimc+dimc),drop=FALSE]
+    Tc = myfun(Yc)
+    Te = myfun(Ye)
+    mystat = nrow(Yc) * mean(myfun(Yc) * myfun(Ye))/(mean(myfun2(Yc)) * mean(myfun2(Ye)))
+    msg = sprintf('%d:%d, %f\n', dimc-itr,dimc,mystat)
+    cat(msg)
+}
+```
+
+The reported values are the values of the test statistics.  
+We observe that for the canonical correlation variables, using an asymptotic result in 
+[@szekely2007measuring, Theorem 6],
+our operating critical value at the level $\alpha=0.05$ is $1.96^2 = 3.8416$.  This suggests that the values of the canonical correlation variables from 
+the third position through the last position does support independence (rather non-association). 
+However, the first two canonical variables appear to be significant enough to support the hypothesis 
+that the first two are correlated.  Given this observation, the output from the raw data is not surprising. 
+Note that this is consistent with our earlier result using Wilk's Lambda.  
+
+
+Non Parametric version -- Permutation Tests 
+-------------------------------------------
+For details on the algorithm used for permutation tests used in this section, 
+see [@Hothorn:Hornik:vandeWiel:Zeileis:2008:JSSOBK:v28i08].  
+
+```{r loading preamble nonparam, echo=FALSE, warning=FALSE,message=FALSE, results='hide'}
+require(coin)
+require(e1071)
+```
+
+For simulation experiments, 
+```{r non param perm simulation, cache=TRUE}
+correxam <- data.frame(x = rnorm(7), y = rnorm(7))
+ip = new('IndependenceProblem',y=rotarod["time"], x=rotarod['group'])
+sexact <-function(obj) {
+    x <-obj@xtrans
+    y <-obj@ytrans
+    perms <- permutations(nrow(x))
+    pstats <- apply(perms,1,function(p) sum(x[p,]*y))
+    pstats <- (pstats - expectation(obj)) / sqrt(variance(obj))
+    p <- function(q) 1 - mean(pstats > q)
+    new("PValue", p=p, pvalue=p)
+}
+independence_test(y~x, data=correxam,alternative = 'less',distribution = sexact)
+```
+Using the raw data:
+```{r non param perm real raw, cache=TRUE}
+myout = foreach(itr = 1:(dimc-1),.combine = 'rbind') %dopar% {
+    lhs = paste(paste0('Xc.',(dimc-itr):(dimc)),collapse = ' + ')
+    rhs = paste(paste0('Xe.',(dime -itr):(dime)),collapse = ' + ')
+    myform = as.formula(paste(lhs,rhs, sep = ' ~ '))
+    mystat = pvalue(independence_test(myform, data = mydata, alternative = 'two.sided'))
+    c(dimc-itr,dimc,mystat)
+}
+
+for(itr in 1:(dimc-1)) {
+    msg = sprintf('%d:%d, %f\n', dimc-itr,dimc,myout[itr,3])
+    cat(msg)    
+}
+
+```
+Using the reduced data:
+```{r non param perm real ccv, cache=TRUE}
+colnames(mydata2) = colnames(mydata)
+
+myout2 = foreach(itr = 1:(dimc-1),.combine = 'rbind') %dopar% {
+    lhs = paste(paste0('Xc.',(dimc-itr):(dimc)),collapse = ' + ')
+    rhs = paste(paste0('Xe.',(dime -itr):(dime)),collapse = ' + ')
+    myform = as.formula(paste(lhs,rhs, sep = ' ~ '))
+    mystat = pvalue(independence_test(myform, data = mydata2, teststat='quad', alternative = 'two.sided',distribution = 'asymptotic'))
+    c(dimc-itr,dimc,mystat)
+}
+
+for(itr in 1:(dimc-1)) {
+    msg = sprintf('%d:%d, %f\n', dimc-itr,dimc,myout2[itr,3])
+    cat(msg)    
+}
+```
+
+The reported values are $p$-values.  
+We observe that a permutation test of [@Hothorn:Hornik:vandeWiel:Zeileis:2008:JSSOBK:v28i08]
+suggests that the significant canonical correlation variables are the first two variables as well. 
+We mention that some choices were made so that the result is comparable to Wilik's Lambda and Distance correlation.  
+Specifically, we have used \emph{distribution='approxiamte'} and \emph{teststat='quad'}.  In all cases, other combinations 
+also result in a conclusion that at most four canonical correlation variables are significantly correlated.  
+
+Further exploration of C. elegan Data 
+-------------------------------------
+In this section, we consider a test of association 
+between latent position of vertices and features of vertices.  
+We examine whether or not the embedding of the vertices and 
+the 'hand-labelled' vertex type show any evidence of statistical 
+correlation.  It appears that both $Xc$ and $Xe$ are correlated with 
+the feature $Xf$ for all dimension up to $8$.  But, for dimension $9$ and $10$, 
+$Xc$ does not appear to be correlated with $Xf$ while $Xe$ appear to
+be still correlated. 
+
+```{r futher exploration,cache=TRUE}
+Xf=cbind(CelegansData$Vcols)
+
+for(itr in 1:10) {
+    msg = (nrow(Xc) * mean(myfun(Xc[,itr:10,drop=FALSE]) * myfun(Xf))/(mean(myfun2(Xc[,itr:10,drop=FALSE])) * mean(myfun2(Xf))))
+    cat(itr,": 10","\t",msg,'\n')
+}
+
+
+for(itr in 1:10) {
+    msg = (nrow(Xe) * mean(myfun(Xe[,itr:10,drop=FALSE]) * myfun(Xf))/(mean(myfun2(Xe[,itr:10,drop=FALSE])) * mean(myfun2(Xf))))
+    cat(itr,": 10","\t",msg,'\n')
+}
+```
+
+Next, we include the results using canonical correlation obtained earlier. It is interesting to see that when tested with canonical correlation, for $Yc$ (from $Xc$), the canonical correlation variables are correlated with $Xf$ all the way up to dimension $10$. 
+On the other hand, for $Ye$ (from $Xe$), the cc variables from $4$th to $10$th does seem to support the null hypothesis of independence.   
+
+```{r further exploration using ccv, cache=TRUE}
+
+for(itr in 1:10) {
+    msg = (nrow(Yc) * mean(myfun(Yc[,itr:10,drop=FALSE]) * myfun(Xf))/(mean(myfun2(Yc[,itr:10,drop=FALSE])) * mean(myfun2(Xf))))
+    cat(itr,": 10","\t",msg,'\n')
+}
+
+for(itr in 1:10) {
+    msg = (nrow(Ye) * mean(myfun(Ye[,itr:10,drop=FALSE]) * myfun(Xf))/(mean(myfun2(Ye[,itr:10,drop=FALSE])) * mean(myfun2(Xf))))
+    cat(itr,": 10","\t",msg,'\n')
+}
+```
+
+
+Note that the question of independence between $Ae$ and $Ac$ is not the same 
+as the question of whether or not $Ae$ and $Ac$ have the same mean.  The next 
+experiment suggests that $Ac$ and $Ae$ has the same mean, and the approach taken 
+is via a model selection technique using information criteria. 
+
+```{r gclust, echo=TRUE,cache=TRUE,eval=FALSE}
+X = cBind(Ac=as.vector(Ac),Ae=as.vector(Ae))
+foreach(itr=1:2,.combine='rbind') %do% {
+    getAICc(gclust.rsvt(X,itr,nmfmethod = 'pe-nmf',alpha=0,beta=0.1))
+}
+#  nclust negloglikpart parampart      AIC
+#1      1      29.58195  1.848173 31.43013
+#2      2      30.42586  4.334048 34.75991
+```
+
+
+# References 

@@ -1,0 +1,102 @@
+---
+title: "Bootstrap Hypothesis Testing"
+author: "LVP"
+date: "11/25/2014"
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+GMM version
+-------------------------
+```{r setup, echo=FALSE,results='hide',warning=FALSE,message=FALSE}
+require(igraph)
+require(knitr)
+require(doMC)
+require(foreach)
+require(mixtools)
+require(mclust)
+setwd('~/public_html/project_lvp/Chapter01/')
+source('gmm_routines.R')
+source('sbm_routines.R')
+
+registerDoMC(22)
+```
+
+
+```{r gmm test,echo=TRUE,message=FALSE,warning=FALSE,results='hide', cache=TRUE}
+n = 100
+n1 = ceiling(n*0.50)
+n2 = n - n1
+X = c(rnorm(n1,mean=-5,sd=1),rnorm(n2,mean=5,sd=1))                                                            
+nboot = 100
+my.output = gmm.test(X,nboot = nboot)
+my.pvals = foreach(mydata = my.output,.combine='cbind') %do% {
+    retval = data.frame(mydata$pval)
+    colnames(retval) = (mydata$nK)
+    rownames(retval) = 'p-value' 
+    retval
+}
+```
+
+```{r gmm test result, results ='asis',echo=FALSE}
+kable(round(my.pvals,3),format='markdown')
+```
+
+
+```{r gmm power computation, echo=TRUE,message=FALSE,warning=FALSE,results='hide', cache=TRUE}
+nsample = 100
+nmc = 100
+alpha = 0.05
+nullK = my.output[[1]]$nK
+altK = my.output[[2]]$nK
+nullparam = my.output[[1]]$fitted
+altparam = my.output[[2]]$fitted
+my.power = gmm.power(nsample,nullK,altK, nullparam,altparam,alpha = alpha,maxmc = nmc)
+```
+
+```{r gmm power result,echo=FALSE}
+print(sprintf('Power is %f',my.power))
+```
+
+
+
+SBM version
+=======================
+```{r}
+nvertex= 300                                                                                                                
+bstruct = c(2/5,2/5,1/5) * nvertex 
+pm <- rbind(c(0.75,0.25,0.5),c(0.25,0.75,0.25),c(0.5,0.25,0.75))
+
+maxK= 6
+nboot=200
+
+Gdata <- sbm.game(nvertex, pref.matrix=pm, block.sizes=bstruct)
+
+my.output = sbm.test(Gdata, maxK = maxK,nboot = nboot)
+my.pvals = foreach(mydata = my.output,.combine='cbind') %do% {
+    retval = data.frame(mydata$pval)
+    colnames(retval) = (mydata$nK)
+    rownames(retval) = 'p-value' 
+    retval
+}                                                                                                                     
+```
+
+```{r sbm test result, results ='asis',echo=FALSE}
+kable(round(my.pvals,3),format='markdown')
+```
+
+```{r sbm power computation, echo=TRUE,message=FALSE,warning=FALSE,results='hide', cache=TRUE}
+maxmc=100
+alpha=0.05
+nullK = my.output[[2]]$nK
+altK = my.output[[3]]$nK
+nullparam = my.output[[2]]$fitted
+altparam = my.output[[3]]$fitted
+my.power = sbm.power(nvertex,nullK,altK,nullparam,altparam, alpha = alpha,maxmc = maxmc)
+```
+
+```{r sbm power result,echo=FALSE}
+print(sprintf('Power is %f',my.power))
+```
