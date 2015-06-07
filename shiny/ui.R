@@ -113,7 +113,7 @@ shinyUI(pageWithSidebar(
          conditionalPanel(
               condition = "input.fast == true",
               sliderInput(inputId="alpha",label="Alpha Level",
-                      min=0,max=.2,value=0.05,step=0.01)
+                      min=0.0005,max=.1,value=0.005,step=0.0005)
          ),
          bsTooltip(id='fast',
              title="Fast plotting only plots vertices and edges, no attributes or colors.",
