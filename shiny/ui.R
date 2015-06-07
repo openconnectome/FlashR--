@@ -123,6 +123,11 @@ shinyUI(pageWithSidebar(
       tabPanel("Invariants",
           tabsetPanel(
             tabPanel("Tabular",
+               checkboxGroupInput(inputId='invariantsList',
+                   label="Invariants to Compute",
+                   choices=invariants$Invariant,
+                   selected=c("Order","Size","#Components",
+                              "Max Component Size")),
                DT::dataTableOutput("mytable",width='50%')),
             tabPanel("Graphical",
                selectInput(inputId="invariants",label="Invariant to Plot",

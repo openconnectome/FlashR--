@@ -29,17 +29,20 @@ getOpenConnectomeList <- function()
 
 }
 
-computeInvariants <- function(g)
+computeInvariants <- function(g,invariantList)
 {
    cat("Computing Invariants:\n")
    inv <- data.frame(Invariants=invariants$Invariant,
                      Values=rep(0.0,nrow(invariants)),
                      Timings=rep(0.0,nrow(invariants)),
                      stringsAsFactors=FALSE)
-   for(i in 1:nrow(invariants)){
-      cat("Computing",invariants$Function[i],"\n")
+   ind <- which(invariants$Invariant %in% invariantList)
+   inv <- inv[ind,,drop=FALSE]
+   invl <- invariants[ind,,drop=FALSE]
+   for(i in 1:nrow(invl)){
+      cat("Computing",invl$Function[i],"\n")
       t1 <- system.time(inv[i,2] <- 
-          round(do.call(invariants$Function[i],args=list(g=g))),3)
+          round(do.call(invl$Function[i],args=list(g=g))),3)
       inv[i,3] <- round(t1['elapsed'],3)
       cat("\t",inv[i,2],inv[i,3],"\n")
    }
@@ -365,7 +368,7 @@ observe({
       g <- gGraph()
       d <- NULL
       if(!is.null(g)){
-         d <- computeInvariants(g)
+         d <- computeInvariants(g,input$invariantsList)
       }
       d
   })
