@@ -5,10 +5,10 @@ library(rARPACK)
 library(Matrix)
 library(DT)
 library(scales)
-library(FlashGraphR)
+#library(FlashGraphR)
 
 
-options(shiny.maxRequestSize = 300*1024^2)
+options(shiny.maxRequestSize = 8000*1024^2)
 
 plot.methods <- c('Auto','Random','circle',
                   'sphere','Fruchterman Reingold',
@@ -42,31 +42,7 @@ openconnectome.dir <- "http://openconnecto.me/data/public/graphs/"
 openconnectome.animals <- c("cat","fly","macaque","mouse","rat",
                             "worm","human")
 
-html2txt <- function(str) {
-		require(XML)
-		if(nchar(str,type="bytes")==0) return(str)
-		str <- paste("<html>",str,"</html>",sep="")
-		paste(unlist(
-			xpathApply(htmlParse(str, asText=TRUE),
-						  "//body//text()", 
-						  xmlValue)),
-	      sep="\n",collapse="\n")
-}
-
-cat("Getting list of openconnectome graphs\n")
-
-openconnectome.graphs <- vector('list',length(openconnectome.animals))
-names(openconnectome.graphs) <- openconnectome.animals
-for(i in 1:length(openconnectome.graphs)){
-   a <- scrape(paste(openconnectome.dir,openconnectome.animals[i],"/",sep=""),
-               parse=FALSE)
-   x <- html2txt(a)
-   b <- gregexpr("\n([[:alnum:]]|[\\._])+\\.graphml\\.?([[:alnum:]]+)?\n",x)
-   openconnectome.graphs[[i]] <- gsub("\n","",unlist(regmatches(x,b)))
-}
-
-cat("Done\n")
-
+load("openConnectomeGraphs.RData")
 
 max.component.size <- function(g){
    max(clusters(g)$csize)
