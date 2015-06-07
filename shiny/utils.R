@@ -164,6 +164,7 @@ get.pl <- function(g) power.law.fit(
 get.core <- function(g) max(graph.coreness(g))
 get.avg.degree <- function(g) mean(degree(g))
 get.max.degree <- function(g) max(degree(g))
+get.min.degree <- function(g) min(degree(g))
 get.var.degree <- function(g) var(degree(g))
 dominate.num.greedy <- function(g) length(dominate.greedy(g))
 

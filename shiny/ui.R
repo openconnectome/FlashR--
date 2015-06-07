@@ -123,12 +123,17 @@ shinyUI(pageWithSidebar(
       tabPanel("Invariants",
           tabsetPanel(
             tabPanel("Tabular",
-               checkboxGroupInput(inputId='invariantsList',
-                   label="Invariants to Compute",
-                   choices=invariants$Invariant,
-                   selected=c("Order","Size","#Components",
-                              "Max Component Size")),
-               DT::dataTableOutput("mytable",width='50%')),
+               bsCollapse(
+                  bsCollapsePanel(title="Select Invariants",
+                     checkboxGroupInput(inputId='invariantsList',
+                         label="Invariants to Compute",
+                         choices=invariants$Invariant,
+                         selected=c("Order","Size","#Components",
+                                    "Max Component Size")))
+                  ),
+                  DT::dataTableOutput("mytable",width='50%'),
+                  br()
+            ),
             tabPanel("Graphical",
                selectInput(inputId="invariants",label="Invariant to Plot",
                       choices=plot.invariants,selected="Degree Distribution"),

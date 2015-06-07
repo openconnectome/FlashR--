@@ -7,6 +7,8 @@ library(DT)
 library(scales)
 #library(FlashGraphR)
 
+source('utils.R')
+
 
 options(shiny.maxRequestSize = 8000*1024^2)
 
@@ -44,28 +46,15 @@ openconnectome.animals <- c("cat","fly","macaque","mouse","rat",
 
 load("openConnectomeGraphs.RData")
 
-max.component.size <- function(g){
-   max(clusters(g)$csize)
-}
-
-get.girth <- function(g) girth(g)$girth
-get.cent <- function(g) centralization.degree(g)$centralization
-get.rec <- function(g){
-   if(is.directed(g)) return(reciprocity(g))
-   else return(NA)
-}
-get.fastgreedy <- function(g) length(fastgreedy.community(
-            as.undirected(simplify(g))))
-
-get.pl <- function(g) power.law.fit(
-             degree.distribution(g))$alpha
-get.core <- function(g) max(graph.coreness(g))
-
 invariants <- data.frame(Invariant=c(
                            "Order",
                            "Size",
                            "#Components",
                            "Max Component Size",
+                           "Max Degree",
+                           "Average Degree",
+                           "Min Degree",
+                           "Degree Variance",
                            "Diameter",
                            "Girth",
                            "Density",
@@ -77,12 +66,17 @@ invariants <- data.frame(Invariant=c(
                            "Degree Assortativity",
                            "Maximal Coreness",
                            "Fast Greedy Communities",
+                           "Greedy Domination Number",
                            "Power Law Fit (Exponent)"),
                         Function=c(
                            'vcount',
                            'ecount',
                            'no.clusters',
                            'max.component.size',
+                           'get.max.degree',
+                           'get.avg.degree',
+                           'get.min.degree',
+                           'get.var.degree',
                            'diameter',
                            'get.girth',
                            'graph.density',
@@ -94,6 +88,7 @@ invariants <- data.frame(Invariant=c(
                            'get.core',
                            'assortativity.degree',
                            'get.fastgreedy',
+                           'dominate.num.greedy',
                            'get.pl'),
                        stringsAsFactors=FALSE)
                            
