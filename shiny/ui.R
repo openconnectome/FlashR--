@@ -79,6 +79,12 @@ shinyUI(pageWithSidebar(
                    checkboxInput('circular',"Circular",FALSE)
          ),
          conditionalPanel(
+            condition = "input.plotMethod == 't-SNE'",
+               sliderInput(inputId='theta',
+                   label="Theta",value=0.5,min=0,max=1,step=0.1)
+               
+         ),
+         conditionalPanel(
               condition = "input.plotMethod == 'RDPG'",
                    radioButtons(inputId='u',label="Vectors",choices=c("U","V","UV"),
                                 selected="U")
@@ -170,7 +176,7 @@ shinyUI(pageWithSidebar(
       tabPanel("Communities",
          checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE),
          bsTooltip(id='dendPlot',
-                   title="Plot a dendrogram of the communities. Not available for Infomap, Spinglass, Multilevel, Label Propation, Leading Eigenvalue or Laplacian.",
+                   title="Plot a dendrogram of the communities. Not available for Infomap, Spinglass, Multilevel, Label Propation, Leading Eigenvalue t-SNE or Laplacian.",
                    placement='top'),
          conditionalPanel(
               condition = "input.dendPlot == false",
@@ -192,6 +198,12 @@ shinyUI(pageWithSidebar(
          sliderInput(inputId='CG',
                           label="Communities Range",min=2,max=50,
                           value=c(2,10),step=1)
+         ),
+         conditionalPanel(
+            condition = "input.communities == 't-SNE' || input.CplotMethod == 't-SNE'",
+               sliderInput(inputId='Ctheta',
+                   label="Theta",value=0.5,min=0,max=1,step=0.1)
+               
          ),
          plotOutput("communityPlot", height="1800px",width="1800px"),
          br(),br()

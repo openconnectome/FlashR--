@@ -115,5 +115,6 @@ communities.list <- c(
    "Walktrap",
    "RDPG",
    "Laplacian",
+   "t-SNE",
    "Spinglass")
 

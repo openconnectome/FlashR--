@@ -124,7 +124,7 @@ computeLaplacian <- function(graph,d,normalize)
 getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
     circular, star.center,
    n, KKniter, KKinittemp, KKcoolexp, scaleLaplacian,dim=3,
-   plotOnly=TRUE)
+   plotOnly=TRUE,theta)
 {
   if(is.null(g)) return(NULL)
   layout <- paste('layout',gsub(" ",".",tolower(plotMethod)),
@@ -159,6 +159,14 @@ getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
      layout <- layout.random(g,dim=3)
   } else if(layout == 'layout.star'){
      layout <- layout.star(g,center=min(star.center,n))
+  } else if(layout == 'layout.t-sne'){
+     z <- graph.spectral.embedding(g,no=min(25,vcount(g)))
+     if(is.directed(g)) {
+         y <- cbind(z$u,z$v)
+     } else {
+         y <- z$u
+     }
+     layout <- Rtsne(y,dim=ifelse(plotOnly,3,2),pca=FALSE,theta=theta)$Y
   } else if(layout == 'layout.kamada.kawai'){
      layout <- layout.kamada.kawai(g,niter=KKniter,
                                           inittemp=KKinittemp,

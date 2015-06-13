@@ -123,7 +123,7 @@ observe({
                KKinittemp=input$KKinittemp, 
                KKcoolexp=input$KKcoolexp,
                scaleLaplacian=input$scaleLaplacian,
-               dim=3,plotOnly=TRUE)
+               dim=3,plotOnly=TRUE,theta=input$theta)
   })
 
   ## to allow for different layouts on the graph tab than on the
@@ -146,7 +146,8 @@ observe({
                KKniter=input$KKniter, 
                KKinittemp=input$KKinittemp, 
                KKcoolexp=input$KKcoolexp,
-               scaleLaplacian=TRUE,dim=input$Cd,plotOnly=FALSE)
+               scaleLaplacian=TRUE,dim=input$Cd,plotOnly=FALSE,
+               theta=input$Ctheta)
   })
 
   ### Generate plot output
@@ -372,7 +373,13 @@ observe({
          z <- walktrap.community(g)
       } else if(input$communities=="Laplacian"){
          x <- computeLaplacian(g,d=input$Cd,normalize=TRUE)
-         z <- Mclust(x,G=input$CG[1]:input$CG[2])
+         if(vcount(g)<=1000){
+            z <- Mclust(x,G=input$CG[1]:input$CG[2])
+         } else {
+            init <- sample(vcount(g),1000)
+            z <- Mclust(x,G=input$CG[1]:input$CG[2],
+                    initialization=list(subset=init))
+         }
       } else if(input$communities=="RDPG"){
          x <- graph.spectral.embedding(g,no=input$Cd)
          if(is.directed(g)) {
@@ -380,7 +387,28 @@ observe({
          } else {
             y <- x$u
          }
-         z <- Mclust(y,G=input$CG[1]:input$CG[2])
+         if(vcount(g)<=1000){
+            z <- Mclust(y,G=input$CG[1]:input$CG[2])
+         } else {
+            init <- sample(vcount(g),1000)
+            z <- Mclust(y,G=input$CG[1]:input$CG[2],
+                    initialization=list(subset=init))
+         }
+      } else if(input$communities=="t-SNE"){
+         x <- graph.spectral.embedding(g,no=25)
+         if(is.directed(g)) {
+            y <- cbind(x$u,x$v)
+         } else {
+            y <- x$u
+         }
+         x <- Rtsne(y,pca=FALSE,theta=input$Ctheta)$Y
+         if(vcount(g)<=1000){
+            z <- Mclust(x,G=input$CG[1]:input$CG[2])
+         } else {
+            init <- sample(vcount(g),1000)
+            z <- Mclust(x,G=input$CG[1]:input$CG[2],
+                    initialization=list(subset=init))
+         }
       }
       z
   })
@@ -391,6 +419,7 @@ observe({
       if(input$communities == "Infomap" ||
          input$communities == "Spinglass" ||
          input$communities == "RDPG" ||
+         input$communities == "t-SNE" ||
          input$communities == "Multilevel" ||
          input$communities == "Label Propagation" ||
          input$communities == "Leading Eigenvalue" ||
@@ -406,6 +435,7 @@ observe({
       cat("Layout (community):",dim(x),"|V|:",vcount(g),"\n")
       z <- getCommunities()
       if(input$communities == "RDPG" ||
+         input$communities == "t-SNE" ||
          input$communities == "Laplacian" 
       ){
          m <- z$classification
