@@ -8,6 +8,7 @@ library(Matrix)
 library(DT)
 library(scales)
 library(mclust)
+library(Rtsne)
 #library(FlashGraphR)
 
 source('utils.R')
