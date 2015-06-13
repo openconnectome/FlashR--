@@ -33,6 +33,7 @@ plot.methods <- c('Auto','Random','circle',
                   'Graphopt',
                   'RDPG',
                   'Laplacian',
+                  't-SNE',
                   'Coordinates')
 
 plot.invariants <- c("Degree Distribution",
