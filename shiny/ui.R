@@ -19,12 +19,14 @@ shinyUI(pageWithSidebar(
                                  label="Open Connectome Graph",
                      choices=openconnectome.graphs,
                      selected=openconnectome.graphs$worm[[1]],
-                     selectize=TRUE))
+                     selectize=TRUE)),
+  numericInput(inputId='seed',label="Random Number Seed",value=seed,
+      min=1,max=1000)
   ),
   ### Main Panel
   mainPanel(
     tabsetPanel(
-      tabPanel("Attributes",
+      tabPanel("At/ributes",
        tabsetPanel(
             tabPanel("Graphical",
             wellPanel(
@@ -62,12 +64,6 @@ shinyUI(pageWithSidebar(
          p("Plotting the graph may take a long time unless the fast plotting option is checked."),
          selectInput(inputId="plotMethod",label="Plot Method",
             choices=plot.methods,selected=plot.methods[1],selectize=FALSE),
-            sliderInput(inputId='vertexSize',
-                          label="Vertex Size",min=1,max=15,
-                          value=1,step=1),
-         bsTooltip(id='vertexSize',
-                   title="The size of the dot representing the vertex.",
-                   placement='top'),
          bsTooltip(id='plotMethod',
                    title="The type of layout for the graph.",
                    placement='top'),
@@ -94,6 +90,11 @@ shinyUI(pageWithSidebar(
                                 value=1)
          ),
          conditionalPanel(
+              condition = "input.plotMethod == 'Laplacian'",
+              checkboxInput(inputId="scaleLaplacian","Scaled Laplacian",
+                           TRUE)
+         ),
+         conditionalPanel(
               condition = "input.plotMethod == 'Kamada Kawai'",
                  selectInput(inputId="KKniter",label="Number of Iterations",
                       choices=c(10,100,500,1000),selected=500),
@@ -103,15 +104,6 @@ shinyUI(pageWithSidebar(
                       choices=c(0.1,0.5,0.99,1,3,5,10),selected=0.99)
          ),
          checkboxInput('fast',"Fast Plotting",TRUE),
-         conditionalPanel(
-              condition = "input.fast == false",
-         selectInput(inputId="vertexLabel",label="Vertex Label",
-            choices="None",selected="None",selectize=FALSE),
-         selectInput(inputId="edgeLabel",label="Edge Label",
-            choices="None",selected="None",selectize=FALSE),
-         selectInput(inputId="edgeColor",label="Color Edges by",
-            choices="None",selected="None",selectize=FALSE),
-          checkboxInput('useWeights',"Weight Edges",FALSE)),
           checkboxInput('UseAlpha',"Use Alpha Blending",TRUE),
          conditionalPanel(
               condition = "input.UseAlpha == true",
@@ -123,9 +115,25 @@ shinyUI(pageWithSidebar(
                    placement='top'),
          tabsetPanel(
             tabPanel("2D",
+            sliderInput(inputId='vertexSize',
+                          label="Vertex Size",min=1,max=15,
+                          value=1,step=1),
+         bsTooltip(id='vertexSize',
+                   title="The size of the dot representing the vertex.",
+                   placement='top'),
+         conditionalPanel(
+              condition = "input.fast == false",
+         selectInput(inputId="vertexLabel",label="Vertex Label",
+            choices="None",selected="None",selectize=FALSE),
+         selectInput(inputId="edgeLabel",label="Edge Label",
+            choices="None",selected="None",selectize=FALSE),
+         selectInput(inputId="edgeColor",label="Color Edges by",
+            choices="None",selected="None",selectize=FALSE),
+          checkboxInput('useWeights',"Weight Edges",FALSE)),
                      plotOutput("plotgraph", height="800px")),
             tabPanel("3D",
-                     webGLOutput("plotgraph3d", height="400px"))
+                     webGLOutput("plotgraph3d", height="800px",width="800px"),
+                     br())
          )
       ),
       tabPanel("Invariants",
@@ -158,8 +166,37 @@ shinyUI(pageWithSidebar(
          )
          )
          )
+      ),
+      tabPanel("Communities",
+         checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE),
+         bsTooltip(id='dendPlot',
+                   title="Plot a dendrogram of the communities. Not available for Infomap, Spinglass, Multilevel, Label Propation, Leading Eigenvalue or Laplacian.",
+                   placement='top'),
+         conditionalPanel(
+              condition = "input.dendPlot == false",
+         selectInput(inputId="CplotMethod",label="Plot Method",
+               choices=plot.methods,selected="Auto",selectize=FALSE),
+         sliderInput(inputId='CvertexSize',
+                          label="Vertex Size",min=1,max=15,
+                          value=5,step=1)
+         ),
+         selectInput(inputId="CvertexLabel",label="Vertex Label",
+               choices="None",selected="None",selectize=FALSE),
+         selectInput(inputId="communities",label="Communities to Compute",
+                      choices=communities.list,selected="Fast Greedy"),
+         conditionalPanel(
+              condition = "input.communities == 'Laplacian' || input.communities == 'RDPG'",
+         sliderInput(inputId='Cd',
+                          label="Embedding Dimension",min=2,max=15,
+                          value=5,step=1),
+         sliderInput(inputId='CG',
+                          label="Communities Range",min=2,max=50,
+                          value=c(2,10),step=1)
+         ),
+         plotOutput("communityPlot", height="1800px",width="1800px"),
+         br(),br()
       )
-    )
+   )
   )
 ))
 

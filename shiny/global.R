@@ -7,10 +7,18 @@ library(rARPACK)
 library(Matrix)
 library(DT)
 library(scales)
+library(mclust)
 #library(FlashGraphR)
 
 source('utils.R')
 
+seed <- 100
+
+colors.list <- unique(c("gray","red","green","cyan","magenta","yellow",
+                "orange","gray30","salmon","gray60","honeydew","greenyellow",
+                "gray90",colors(distinct=TRUE)))
+colors.list <- colors.list[-grep("white",colors.list)]
+colors.list <- colors.list[-grep("black",colors.list)]
 
 options(shiny.maxRequestSize = 8000*1024^2)
 
@@ -95,4 +103,15 @@ invariants <- data.frame(Invariant=c(
                        stringsAsFactors=FALSE)
                            
 
-                         
+communities.list <- c(
+   "Fast Greedy",
+   "Edge Betweenness",
+   "Infomap",
+   "Leading Eigenvector",
+   "Label Propagation",
+   "Multilevel",
+   "Walktrap",
+   "RDPG",
+   "Laplacian",
+   "Spinglass")
+

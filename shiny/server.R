@@ -1,8 +1,14 @@
 ### Main shinyServer function
 shinyServer(function(input, output, session) {
 
+set.seed(seed)
+
 observe({
    cat("Open Connectome graph:",input$openconnectome,"\n")
+})
+
+observe({
+   set.seed(input$seed)
 })
    
   gGraph <- reactive({
@@ -87,6 +93,8 @@ observe({
         vertexLabels <- union("None",list.vertex.attributes(g))
         updateSelectInput(session,inputId="vertexLabel",
             choices=vertexLabels,selected="None")
+        updateSelectInput(session,inputId="CvertexLabel",
+            choices=c("None","Community",vertexLabels),selected="Community")
         updateSelectInput(session,inputId="vertexAtts",
             choices=vertexLabels,selected="None")
         edgeLabels <- union("None",list.edge.attributes(g))
@@ -101,6 +109,7 @@ observe({
   })
 
   layout <- reactive({
+     set.seed(input$seed)
      g <- gGraph()
      getLayout(g, 
                plotMethod=input$plotMethod, 
@@ -112,7 +121,32 @@ observe({
                n=input$n, 
                KKniter=input$KKniter, 
                KKinittemp=input$KKinittemp, 
-               KKcoolexp=input$KKcoolexp)
+               KKcoolexp=input$KKcoolexp,
+               scaleLaplacian=input$scaleLaplacian,
+               dim=3,plotOnly=TRUE)
+  })
+
+  ## to allow for different layouts on the graph tab than on the
+  ## communities tab. I've chosen to only do normalized Laplacian,
+  ## and for the RDPG it is cbind(u,v) unless the graph is undirected,
+  ## in which case it is u. Note that it doesn't scale by d, but that
+  ## only changes the component variances, and this is being passed to
+  ## mclust.
+  layoutC <- reactive({
+     set.seed(input$seed)
+     g <- gGraph()
+     getLayout(g, 
+               plotMethod=input$CplotMethod, 
+               u=ifelse(is.directed(g),"UV", "U"),
+               FRniter=input$FRniter,
+               FRcoolexp=input$FRcoolexp, 
+               circular=input$circular, 
+               star.center=input$star.center,
+               n=input$n, 
+               KKniter=input$KKniter, 
+               KKinittemp=input$KKinittemp, 
+               KKcoolexp=input$KKcoolexp,
+               scaleLaplacian=TRUE,dim=input$Cd,plotOnly=FALSE)
   })
 
   ### Generate plot output
@@ -120,8 +154,10 @@ observe({
      g <- gGraph()
      if(!is.null(g)){
         x <- layout()
+        cat("Layout (plot):",dim(x),vcount(g),"\n")
         if(input$fast){
-           fastPlot(g,x,input$UseAlpha,input$alphaLevel)
+           fastPlot(g,x,input$UseAlpha,input$alphaLevel,input$vertexSize,
+           color=2)
         } else {
            vl <- input$vertexLabel
            if(vl=='None') vl <- NA
@@ -156,8 +192,14 @@ observe({
   output$plotgraph3d <- renderWebGL({  
      g <- gGraph()
      if(!is.null(g)){
+        progress <- Progress$new(session,min=1,max=10)
+        on.exit(progress$close())
+        progress$set(message = 'Computing the 3d plot',
+                     detail='Please be patient...')
         x <- layout()
-        fastPlot3D(g,x)
+        progress$set(value=1)
+        fastPlot3D(g,x,input$UseAlpha,input$alphaLevel)
+        progress$set(value=10)
      }
   })
 
@@ -308,5 +350,92 @@ observe({
       datatable(inv,rownames=FALSE)
   })
 
+  getCommunities <- reactive({
+      set.seed(input$seed)
+      g <- gGraph()
+      if(is.null(g)) return(NULL)
+      if(input$communities =="Fast Greedy"){
+         z <- fastgreedy.community(as.undirected(simplify(g)))
+      } else if(input$communities=="Leading Eigenvector"){
+         z <- leading.eigenvector.community(as.undirected(simplify(g)))
+      } else if(input$communities=="Label Propagation"){
+         z <- label.propagation.community(g)
+      } else if(input$communities=="Multilevel"){
+         z <- multilevel.community(as.undirected(simplify(g)))
+      } else if(input$communities=="Edge Betweenness"){
+         z <- edge.betweenness.community(g)
+      } else if(input$communities=="Infomap"){
+         z <- infomap.community(g)
+      } else if(input$communities=="Spinglass"){
+         z <- spinglass.community(g)
+      } else if(input$communities=="Walktrap"){
+         z <- walktrap.community(g)
+      } else if(input$communities=="Laplacian"){
+         x <- computeLaplacian(g,d=input$Cd,normalize=TRUE)
+         z <- Mclust(x,G=input$CG[1]:input$CG[2])
+      } else if(input$communities=="RDPG"){
+         x <- graph.spectral.embedding(g,no=input$Cd)
+         if(is.directed(g)) {
+            y <- cbind(x$u,x$v)
+         } else {
+            y <- x$u
+         }
+         z <- Mclust(y,G=input$CG[1]:input$CG[2])
+      }
+      z
+  })
+
+  ### Generate plot output
+  output$communityPlot <- renderPlot({  
+      dp <- input$dendPlot
+      if(input$communities == "Infomap" ||
+         input$communities == "Spinglass" ||
+         input$communities == "RDPG" ||
+         input$communities == "Multilevel" ||
+         input$communities == "Label Propagation" ||
+         input$communities == "Leading Eigenvalue" ||
+         input$communities == "Laplacian" 
+      ){
+         updateCheckboxInput(session,inputId="dendPlot",value=FALSE)
+         dp <- FALSE
+         warning("Cannot dendPlot this community type\n")
+      }
+      g <- gGraph()
+      if(is.null(g)) return(NULL)
+      x <- layoutC()
+      cat("Layout (community):",dim(x),"|V|:",vcount(g),"\n")
+      z <- getCommunities()
+      if(input$communities == "RDPG" ||
+         input$communities == "Laplacian" 
+      ){
+         m <- z$classification
+      } else {
+         m <- membership(z)
+      }
+      vl <- input$CvertexLabel
+      if(vl == 'None') {
+         labels <- NULL
+      } else if(vl == 'Community'){
+         labels <- m
+      } else {
+         labels <- get.vertex.attribute(g,vl)
+      }
+      if(dp){
+         dendPlot(z,labels=labels,main=paste(max(m),"Communities"))
+      } else {
+         ec <- input$edgeColor
+         if(ec=='None') {
+            ec <- 1
+         } else {
+            att <- get.edge.attribute(g,ec)
+            uatt <- unique(att)
+            ec <- ((match(att,uatt)-1) %% 8) + 1
+         }
+         col <- colors.list[((m-1) %% length(colors.list))+1]
+         plot(g,layout=x[,1:2],edge.color=ec,vertex.color=col,
+              vertex.size=input$CvertexSize,vertex.label=labels,
+              main=paste(max(m),"Communities"))
+      }
+  })
 
 })

@@ -69,9 +69,9 @@ computeInvariants <- function(g,invariantList)
    datatable(inv,rownames=FALSE)
 }
 
-fastPlot <- function(g,layout,use.alpha,alpha)
+fastPlot <- function(g,layout,use.alpha,alpha,size,color=2)
 {
-   plot(layout,pch=20,axes=FALSE,xlab="",ylab="")
+   plot(layout,pch=20,axes=FALSE,xlab="",ylab="",cex=size,col=color)
    edges <- get.edgelist(g,names=FALSE)
    if(use.alpha){
       col <- alpha('black',alpha)
@@ -85,16 +85,24 @@ fastPlot <- function(g,layout,use.alpha,alpha)
       segments(layout[edges[,1],1],layout[edges[,1],2],
              layout[edges[,2],1],layout[edges[,2],2],col=col)
    }
-   points(layout,pch=20,col=2)
+   points(layout,pch=20,cex=size,col=color)
 }
 
-fastPlot3D <- function(g,layout)
+fastPlot3D <- function(g,layout,use.alpha,alpha)
 {
-   if(ncol(layout)==2) layout <- cbind(layout,rep(0,nrow(layout)))
-   plot3d(layout,axes=FALSE,xlab="",ylab="",zlab="",box=FALSE)
-   #edges <- get.edgelist(g,names=FALSE)
-   #segments3d(layout[edges[,1],1],layout[edges[,1],2],layout[edges[,1],3],
-   #          layout[edges[,2],1],layout[edges[,2],2],layout[edges[,2],3])
+   if(ncol(layout)==2) layout <- cbind(layout,runif(nrow(layout)))
+   plot3d(layout,axes=FALSE,xlab="",ylab="",zlab="",box=FALSE,col=1)
+   edges <- get.edgelist(g,names=FALSE)
+   x <- matrix(0,nrow=2*nrow(edges),ncol=3)
+   x[(1:nrow(edges))*2-1,] <- layout[edges[,1],]
+   x[(1:nrow(edges))*2,] <- layout[edges[,2],]
+   cat("plotting edges\n")
+   if(use.alpha){
+      segments3d(x[,1],x[,2],x[,3],col='black',alpha=alpha)
+   } else {
+      segments3d(x[,1],x[,2],x[,3],col=1)
+   }
+   cat("Done\n")
 }
 
 graph.spectral.embedding <- function(graph=g,no=2,
@@ -105,51 +113,68 @@ graph.spectral.embedding <- function(graph=g,no=2,
 	svds(B,k=no)
 }
 
+computeLaplacian <- function(graph,d,normalize)
+{
+     A <- graph.laplacian(as.undirected(graph,mode='collapse'),
+              normalized=normalize)
+     z <- eigs(A,k=d+1,which="SM")
+     z$vectors[,1:d]
+}
+
 getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
     circular, star.center,
-   n, KKniter, KKinittemp, KKcoolexp)
+   n, KKniter, KKinittemp, KKcoolexp, scaleLaplacian,dim=3,
+   plotOnly=TRUE)
 {
   if(is.null(g)) return(NULL)
   layout <- paste('layout',gsub(" ",".",tolower(plotMethod)),
                   sep=".")
   if(layout == 'layout.auto'){
-     layout <- layout.auto(g,dim=2)
+     layout <- layout.auto(g,dim=3)
   } else if(layout == 'layout.laplacian'){
-     A <- graph.laplacian(as.undirected(g,mode='collapse'))
-     z <- eigs(A,k=4,which="SM")
-     d <- rev(z$values)
-     layout <- z$vectors[,(length(d)-1):1]
+     layout <- computeLaplacian(g,d=dim,normalize=scaleLaplacian)
   } else if(layout == 'layout.rdpg'){
-     z <- graph.spectral.embedding(g,no=3)
+     z <- graph.spectral.embedding(g,no=dim)
      if(u=="U") {
         x <- z$u
      } else if(u=="V"){
         x <- z$v
      } else {
-        x <- cbind(z$u[,1],z$v[,1])
+        if(plotOnly){
+           x <- cbind(z$u[,1:2],z$v[,1])
+        } else {
+           x <- cbind(z$u,z$v)
+        }
      }
      layout <- x
   } else if(layout == 'layout.fruchterman.reingold'){
      layout <- layout.fruchterman.reingold(g,niter=FRniter,
-                                          coolexp=FRcoolexp)
+                                          coolexp=FRcoolexp,dim=3)
   } else if(layout == 'layout.fruchterman.reingold.grid'){
      layout <- layout.fruchterman.reingold.grid(g,niter=FRniter,
                                           coolexp=FRcoolexp)
   } else if(layout == 'layout.reingold.tilford'){
      layout <- layout.reingold.tilford(g,circular=circular)
+  } else if(layout == 'layout.random'){
+     layout <- layout.random(g,dim=3)
   } else if(layout == 'layout.star'){
      layout <- layout.star(g,center=min(star.center,n))
   } else if(layout == 'layout.kamada.kawai'){
      layout <- layout.kamada.kawai(g,niter=KKniter,
                                           inittemp=KKinittemp,
-                                          coolexp=KKcoolexp)
+                                          coolexp=KKcoolexp,dim=3)
   } else if(layout =='layout.coordinates'){
      x <- get.vertex.attribute(g,'x')
      if(!is.null(x)){
         y <- get.vertex.attribute(g,'y')
-        layout <- cbind(x,y)
+        if(!is.null(y)){
+           z <- get.vertex.attribute(g,'z')
+           layout <- cbind(x,y,z)
+        } else {
+           layout <- cbind(x,y)
+        }
      } else {
-        layout <- layout.auto(g,dim=2)
+        layout <- layout.auto(g,dim=3)
      }
   } else {
      layout <- get(layout)(g)
