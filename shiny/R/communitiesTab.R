@@ -37,18 +37,18 @@ communitiesTab <- function()
       plotOutput("communityPlot", height="1800px",width="1800px"),
       br(),br()
    ),
-   tabPanel("Compare Two Algorithms",
-      checkboxInput(inputId='tanglegram',label="Tanglegram",value=TRUE),
-      conditionalPanel(
-         condition = "input.tanglegram==true",
-      checkboxInput(inputId='sort',label="Sort",value=TRUE)),
-      h2("Compare Fastgreedy to Edge Betweenness Communities"),
-      plotOutput("communityComp1", height="800px",width="500px"),
-      h2("Compare Fastgreedy to Walktrap Communities"),
-      plotOutput("communityComp2", height="800px",width="500px"),
-      h2("Compare Edge Betweenness to Walktrap Communities"),
-      plotOutput("communityComp3", height="800px",width="500px")
-   ),
+#   tabPanel("Compare Two Algorithms",
+#      checkboxInput(inputId='tanglegram',label="Tanglegram",value=TRUE),
+#      conditionalPanel(
+#         condition = "input.tanglegram==true",
+#      checkboxInput(inputId='sort',label="Sort",value=TRUE)),
+#      h2("Compare Fastgreedy to Edge Betweenness Communities"),
+#      plotOutput("communityComp1", height="800px",width="500px"),
+#      h2("Compare Fastgreedy to Walktrap Communities"),
+#      plotOutput("communityComp2", height="800px",width="500px"),
+#      h2("Compare Edge Betweenness to Walktrap Communities"),
+#      plotOutput("communityComp3", height="800px",width="500px")
+#   ),
    tabPanel("Compare All Algorithms",
       h2("Compare All Communities"),
       plotOutput("communityCompM", height="800px",width="500px")
