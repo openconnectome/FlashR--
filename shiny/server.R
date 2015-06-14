@@ -579,11 +579,13 @@ observe({
      rownames(M) <- paste(c("Laplac","RDPG","t-SNE",
                       "Fast","Edge","Walk",
                       "LEigen","LabelP","SpinG","MultiL","InfoM"),a)
-     M
+     a <- hclust(eqDist(t(M)),method='ward.D2')
+     M[,a$order]
   })
 
   output$communityCompM <- renderPlot({  
-     heatmap(getCommunitiesMatrix(),labCol=NA,col=gray((255:0)/255))
+     heatmap(getCommunitiesMatrix(),labCol=NA,col=gray((255:0)/255),
+             distfun=meila,Colv=NA)
   })
 
   output$communityComp1 <- renderPlot({  
