@@ -104,6 +104,9 @@ observe({
             choices=edgeLabels,selected="None")
         updateSelectInput(session,inputId="edgeAtts",
             choices=edgeLabels,selected="None")
+        m <- max(3,floor(vcount(g)/40))
+        updateSliderInput(session,inputId="subsample",
+            min=2,max=m,value=min(4,m-1),step=1)
      }
      g
   })
@@ -148,6 +151,36 @@ observe({
                KKcoolexp=input$KKcoolexp,
                scaleLaplacian=TRUE,dim=input$Cd,plotOnly=FALSE,
                theta=input$Ctheta)
+  })
+
+  getSubsampled <- reactive({
+     g <- gGraph()
+     if(!is.null(g)){
+        A <- get.adjacency(g)
+        cat("Subsample:",input$subsample,"\n")
+        if(input$subsample>1){
+           if(input$contour || nrow(A)>2000){
+              w <- input$subsample
+              cat("Window:",w,"\n")
+              B <- apply(A,1,slideFunct,window=w,step=round(w/2))
+              A <- apply(B,2,slideFunct,window=w,step=round(w/2))
+           }
+        }
+     }
+     A
+  })
+
+  ### Generate plot output
+  output$adjacencyPlot <- renderPlot({  
+     g <- gGraph()
+     if(!is.null(g)){
+        A <- getSubsampled()
+        if(input$contour){
+           contour(1:nrow(A),1:ncol(A),A)
+        } else {
+           image(t(A)[nrow(A):1,])
+        }
+     }
   })
 
   ### Generate plot output
@@ -199,7 +232,7 @@ observe({
                      detail='Please be patient...')
         x <- layout()
         progress$set(value=1)
-        fastPlot3D(g,x,input$UseAlpha,input$alphaLevel)
+        fastPlot3D(g,x,input$UseAlpha3D,input$alphaLevel3D,input$randomZ)
         progress$set(value=10)
      }
   })
@@ -441,6 +474,8 @@ observe({
          m <- z$classification
       } else {
          m <- membership(z)
+         a <- order(as.numeric(names(m)))
+         m <- m[a]
       }
       vl <- input$CvertexLabel
       if(vl == 'None') {
@@ -468,4 +503,137 @@ observe({
       }
   })
 
+  get3Communities <- reactive({
+        progress <- Progress$new(session,min=1,max=9)
+        on.exit(progress$close())
+        progress$set(message = 'Computing communities',
+                  detail='This may take a while...')
+        progress$set(value=1)
+         z1 <- fastgreedy.community(as.undirected(simplify(g)))
+                 progress$set(value=3)
+         z2 <- edge.betweenness.community(g)
+                 progress$set(value=8)
+         z3 <- walktrap.community(g)
+                 progress$set(value=9)
+     list(z1,z2,z3)
+  })
+
+  getCommunitiesMatrix <- reactive({
+        g <- gGraph()
+        progress <- Progress$new(session,min=1,max=9)
+        on.exit(progress$close())
+        progress$set(message = 'Computing all communities',
+                  detail='This will take a while...')
+        progress$set(value=1)
+         x <- computeLaplacian(g,d=input$Cd,normalize=TRUE)
+         if(vcount(g)<=1000){
+            z <- Mclust(x,G=input$CG[1]:input$CG[2])
+         } else {
+            init <- sample(vcount(g),1000)
+            z <- Mclust(x,G=input$CG[1]:input$CG[2],
+                    initialization=list(subset=init))
+         }
+         lap <- z$classification
+         x <- graph.spectral.embedding(g,no=input$Cd)
+         if(is.directed(g)) {
+            y <- cbind(x$u,x$v)
+         } else {
+            y <- x$u
+         }
+         if(vcount(g)<=1000){
+            z <- Mclust(y,G=input$CG[1]:input$CG[2])
+         } else {
+            init <- sample(vcount(g),1000)
+            z <- Mclust(y,G=input$CG[1]:input$CG[2],
+                    initialization=list(subset=init))
+         }
+         rd <- z$classification
+         x <- graph.spectral.embedding(g,no=25)
+         if(is.directed(g)) {
+            y <- cbind(x$u,x$v)
+         } else {
+            y <- x$u
+         }
+         x <- Rtsne(y,pca=FALSE,theta=input$Ctheta)$Y
+         if(vcount(g)<=1000){
+            z <- Mclust(x,G=input$CG[1]:input$CG[2])
+         } else {
+            init <- sample(vcount(g),1000)
+            z <- Mclust(x,G=input$CG[1]:input$CG[2],
+                    initialization=list(subset=init))
+         }
+         ts <- z$classification
+        z <- get3Communities()
+        M <- rbind(lap,rd,ts,
+                   membership(z[[1]]),
+                   membership(z[[2]]),
+                   membership(z[[3]]),
+                   membership(leading.eigenvector.community(
+                        as.undirected(simplify(g)))),
+                   membership(label.propagation.community(g)),
+                   membership(spinglass.community(g)),
+                   membership(multilevel.community(  
+                      as.undirected(simplify(g)))),
+                   membership(infomap.community(g)))
+     a <- apply(M,1,max)
+     rownames(M) <- paste(c("Laplac","RDPG","t-SNE",
+                      "Fast","Edge","Walk",
+                      "LEigen","LabelP","SpinG","MultiL","InfoM"),a)
+     M
+  })
+
+  output$communityCompM <- renderPlot({  
+     heatmap(getCommunitiesMatrix(),labCol=NA,col=gray((255:0)/255))
+  })
+
+  output$communityComp1 <- renderPlot({  
+         z <- get3Communities()
+         z <- lapply(z,as.dendrogram)
+        progress <- Progress$new(session,min=1,max=9)
+        on.exit(progress$close())
+        progress$set(message = 'Plotting FG vs EB communities',
+                  detail='This may take a while...')
+         if(input$tanglegram){
+            tanglegram(z[[1]],z[[2]],sort=input$sort)
+         } else {
+            dend_diff(z[[1]],z[[2]])
+         }
+  })
+  output$communityComp2 <- renderPlot({  
+         z <- get3Communities()
+        progress <- Progress$new(session,min=1,max=9)
+        on.exit(progress$close())
+        progress$set(message = 'Plotting FG vs WT communities',
+                  detail='This may take a while...')
+         if(input$tanglegram){
+            tanglegram(z[[1]],z[[3]],sort=input$sort)
+         } else {
+            dend_diff(z[[1]],z[[3]])
+         }
+  })
+  output$communityComp3 <- renderPlot({  
+         z <- get3Communities()
+        progress <- Progress$new(session,min=1,max=9)
+        on.exit(progress$close())
+        progress$set(message = 'Plotting EB vs WT communities',
+                  detail='This may take a while...')
+         if(input$tanglegram){
+            tanglegram(z[[2]],z[[3]],sort=input$sort)
+         } else {
+            dend_diff(z[[2]],z[[3]])
+         }
+  })
+
+  output$communityComp4 <- renderPlot({  
+         z <- get3Communities()
+        progress <- Progress$new(session,min=1,max=9)
+        on.exit(progress$close())
+        progress$set(message = 'Plotting EB vs WT communities',
+                  detail='This may take a while...')
+         if(input$tanglegram){
+            tanglegram(z[[2]],z[[3]],sort=input$sort)
+         } else {
+            dend_diff(z[[2]],z[[3]])
+         }
+  })
 })

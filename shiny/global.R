@@ -9,7 +9,11 @@ library(DT)
 library(scales)
 library(mclust)
 library(Rtsne)
+library(dendextend)
 #library(FlashGraphR)
+for(file in list.files("R",full.names=TRUE)){
+   source(file)
+}
 
 source('utils.R')
 

@@ -88,9 +88,15 @@ fastPlot <- function(g,layout,use.alpha,alpha,size,color=2)
    points(layout,pch=20,cex=size,col=color)
 }
 
-fastPlot3D <- function(g,layout,use.alpha,alpha)
+fastPlot3D <- function(g,layout,use.alpha,alpha,random)
 {
-   if(ncol(layout)==2) layout <- cbind(layout,runif(nrow(layout)))
+   if(ncol(layout)==2) {
+      if(random){
+         layout <- cbind(layout,runif(nrow(layout)))
+      } else {
+         layout <- cbind(layout,rep(0,nrow(layout)))
+      }
+   }
    plot3d(layout,axes=FALSE,xlab="",ylab="",zlab="",box=FALSE,col=1)
    edges <- get.edgelist(g,names=FALSE)
    x <- matrix(0,nrow=2*nrow(edges),ncol=3)
