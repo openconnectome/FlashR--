@@ -504,6 +504,7 @@ observe({
   })
 
   get3Communities <- reactive({
+        g <- gGraph()
         progress <- Progress$new(session,min=1,max=9)
         on.exit(progress$close())
         progress$set(message = 'Computing communities',
@@ -563,11 +564,10 @@ observe({
                     initialization=list(subset=init))
          }
          ts <- z$classification
-        z <- get3Communities()
         M <- rbind(lap,rd,ts,
-                   membership(z[[1]]),
-                   membership(z[[2]]),
-                   membership(z[[3]]),
+               membership(fastgreedy.community(as.undirected(simplify(g)))),
+                   membership(edge.betweenness.community(g)),
+                   membership(walktrap.community(g)),
                    membership(leading.eigenvector.community(
                         as.undirected(simplify(g)))),
                    membership(label.propagation.community(g)),
