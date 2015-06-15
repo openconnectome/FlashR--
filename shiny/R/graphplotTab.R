@@ -63,13 +63,32 @@ graphplotTab <- function()
                bsTooltip(id='fast',
                    title="Fast plotting only plots vertices and edges, no attributes or colors.",
                          placement='top'),
-         sliderInput(inputId='vertexSize',
+         checkboxInput(inputId='sizeByVar',
+                       label='Size vertices by variable',
+                       value=FALSE),
+         conditionalPanel(
+            condition = "input.sizeByVar == false",
+               sliderInput(inputId='vertexSize',
                        label="Vertex Size",min=1,max=15,
                        value=1,step=1),
       bsTooltip(id='vertexSize',
                 title="The size of the dot representing the vertex.",
                 placement='top')
-            )),
+           ),
+         conditionalPanel(
+            condition = "input.sizeByVar == true",
+                  selectInput(inputId="vertexAttsSize",
+                              label="Attribute associated with vertex size",
+                  choices='None',selected='None',selectize=FALSE)
+             ),
+      checkboxInput(inputId='colorByVar',
+         label='Color vertices by variable', value=FALSE),
+         conditionalPanel(
+            condition = "input.colorByVar == true",
+      selectInput(inputId="vertexAttsColor",
+                              label="Attribute associated with vertex color",
+                  choices='None',selected='None',selectize=FALSE),
+       checkboxInput('showLegend',"Show vertex color legend",FALSE)),
       conditionalPanel(
            condition = "input.fast == false",
       selectInput(inputId="vertexLabel",label="Vertex Label",
@@ -78,7 +97,8 @@ graphplotTab <- function()
          choices="None",selected="None",selectize=FALSE),
       selectInput(inputId="edgeColor",label="Color Edges by",
          choices="None",selected="None",selectize=FALSE),
-       checkboxInput('useWeights',"Weight Edges",FALSE)),
+       checkboxInput('useWeights',"Weight Edges",FALSE))
+            )),
                   plotOutput("plotgraph", height="800px")),
          tabPanel("3D",
                 checkboxInput('UseAlpha3D',"Use Alpha Blending",TRUE),

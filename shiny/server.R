@@ -93,6 +93,10 @@ observe({
         vertexLabels <- union("None",list.vertex.attributes(g))
         updateSelectInput(session,inputId="vertexLabel",
             choices=vertexLabels,selected="None")
+        updateSelectInput(session,inputId="vertexAttsSize",
+            choices=vertexLabels,selected="None")
+        updateSelectInput(session,inputId="vertexAttsColor",
+            choices=vertexLabels,selected="None")
         updateSelectInput(session,inputId="CvertexLabel",
             choices=c("None","Community",vertexLabels),selected="Community")
         updateSelectInput(session,inputId="vertexAtts",
@@ -189,9 +193,38 @@ observe({
      if(!is.null(g)){
         x <- layout()
         cat("Layout (plot):",dim(x),vcount(g),"\n")
+        if(input$sizeByVar && input$vertexAttsSize != 'None'){
+           size <- get.vertex.attribute(g,input$vertexAttsSize)
+           if(all(is.numeric(size))){
+              size <- 3*size/max(size)
+           } else {
+              warning("sizing vertices using a non-numeric label")
+              a <- sort(unique(size))
+              size <- match(size,a)
+              size <- 3*size/max(size)
+           }
+        } else {
+           size <- input$vertexSize
+        }
+        color <- "SkyBlue"
+        if(input$colorByVar && input$vertexAttsColor != 'None'){
+           color <- get.vertex.attribute(g,input$vertexAttsColor)
+           vars <- color
+           if(all(is.numeric(color))){
+              if(diff(range(color))!=0) {
+                 color <- gray((max(color)-color)/(max(color)-min(color)))
+              }
+           } else {
+              a <- sort(unique(color))
+              color <- match(color,a)
+           }
+           legnd <- unique(data.frame(name=vars,color=color,
+                           stringsAsFactors=FALSE))
+           legnd <- legnd[order(legnd$name),]
+        } 
         if(input$fast){
-           fastPlot(g,x,input$UseAlpha,input$alphaLevel,input$vertexSize,
-           color=2)
+           fastPlot(g,x,input$UseAlpha,input$alphaLevel,size,
+           color=color)
         } else {
            vl <- input$vertexLabel
            if(vl=='None') vl <- NA
@@ -205,7 +238,6 @@ observe({
                  weight <- get.edge.attribute(g,'weight')
               }
            }
-           color <- 1
            ec <- input$edgeColor
            if(ec=='None') {
               ec <- 1
@@ -215,10 +247,28 @@ observe({
               ec <- ((match(att,uatt)-1) %% 8) + 1
            }
            if(input$UseAlpha) ec <- alpha(ec,input$alphaLevel)
-           plot(g,vertex.size=input$vertexSize,vertex.label=vl,
+           plot(g,vertex.size=size,vertex.label=vl,
+                vertex.color=color,
                 edge.width=weight,edge.label=el,
                 edge.color=ec,
                 layout=x)
+        }
+        if(input$showLegend){
+           n <- nrow(legnd)
+           if(n>40){
+              nc <- 5
+           } else if(n>30) {
+              nc <- 4
+           } else if(n>20) {
+              nc <- 3
+           } else if(n>10) {
+              nc <- 2
+           } else {
+              nc <- 1
+           }
+           legend(x="topright",legend=legnd$name,col=legnd$color,
+                  ncol=nc,
+                  pch=20)
         }
      }
   })
