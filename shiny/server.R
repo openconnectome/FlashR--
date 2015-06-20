@@ -421,6 +421,10 @@ observe({
   })
 
   getCommunities <- reactive({
+                 progress <- Progress$new(session,min=1,max=10)
+                 on.exit(progress$close())
+                 progress$set(message = 'Computing communities',
+                           detail='This may take a while...')
       set.seed(input$seed)
       g <- gGraph()
       if(is.null(g)) return(NULL)
@@ -539,22 +543,6 @@ observe({
       }
   })
 
-  get3Communities <- reactive({
-        g <- gGraph()
-        progress <- Progress$new(session,min=1,max=9)
-        on.exit(progress$close())
-        progress$set(message = 'Computing communities',
-                  detail='This may take a while...')
-        progress$set(value=1)
-         z1 <- fastgreedy.community(as.undirected(simplify(g)))
-                 progress$set(value=3)
-         z2 <- edge.betweenness.community(g)
-                 progress$set(value=8)
-         z3 <- walktrap.community(g)
-                 progress$set(value=9)
-     list(z1,z2,z3)
-  })
-
   getCommunitiesMatrix <- reactive({
         g <- gGraph()
         progress <- Progress$new(session,min=1,max=9)
@@ -624,54 +612,4 @@ observe({
              distfun=meila,Colv=NA)
   })
 
-  output$communityComp1 <- renderPlot({  
-         z <- get3Communities()
-         z <- lapply(z,as.dendrogram)
-        progress <- Progress$new(session,min=1,max=9)
-        on.exit(progress$close())
-        progress$set(message = 'Plotting FG vs EB communities',
-                  detail='This may take a while...')
-         if(input$tanglegram){
-            tanglegram(z[[1]],z[[2]],sort=input$sort)
-         } else {
-            dend_diff(z[[1]],z[[2]])
-         }
-  })
-  output$communityComp2 <- renderPlot({  
-         z <- get3Communities()
-        progress <- Progress$new(session,min=1,max=9)
-        on.exit(progress$close())
-        progress$set(message = 'Plotting FG vs WT communities',
-                  detail='This may take a while...')
-         if(input$tanglegram){
-            tanglegram(z[[1]],z[[3]],sort=input$sort)
-         } else {
-            dend_diff(z[[1]],z[[3]])
-         }
-  })
-  output$communityComp3 <- renderPlot({  
-         z <- get3Communities()
-        progress <- Progress$new(session,min=1,max=9)
-        on.exit(progress$close())
-        progress$set(message = 'Plotting EB vs WT communities',
-                  detail='This may take a while...')
-         if(input$tanglegram){
-            tanglegram(z[[2]],z[[3]],sort=input$sort)
-         } else {
-            dend_diff(z[[2]],z[[3]])
-         }
-  })
-
-  output$communityComp4 <- renderPlot({  
-         z <- get3Communities()
-        progress <- Progress$new(session,min=1,max=9)
-        on.exit(progress$close())
-        progress$set(message = 'Plotting EB vs WT communities',
-                  detail='This may take a while...')
-         if(input$tanglegram){
-            tanglegram(z[[2]],z[[3]],sort=input$sort)
-         } else {
-            dend_diff(z[[2]],z[[3]])
-         }
-  })
 })

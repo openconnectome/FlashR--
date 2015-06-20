@@ -4,12 +4,11 @@ communitiesTab <- function()
       h2("Community structure in the graph."),
       tabsetPanel(
       tabPanel("Single Algorithm",
-      checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE),
-      bsTooltip(id='dendPlot',
-                title="Plot a dendrogram of the communities. Not available for Infomap, Spinglass, Multilevel, Label Propation, Leading Eigenvalue t-SNE or Laplacian.",
-                placement='top'),
       selectInput(inputId="communities",label="Communities to Compute",
                    choices=communities.list,selected="Fast Greedy"),
+      conditionalPanel(
+         condition = "input.communities == 'Walktrap' || input.communities == 'Fast Greedy' || input.communities == 'Edge Betweenness'",
+      checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE)),
       conditionalPanel(
            condition = "input.communities == 'Laplacian' || input.communities == 'RDPG'",
       sliderInput(inputId='Cd',
@@ -28,23 +27,12 @@ communitiesTab <- function()
       plotOutput("communityPlot", height="1800px",width="1800px"),
       br(),br()
    ),
-#   tabPanel("Compare Two Algorithms",
-#      checkboxInput(inputId='tanglegram',label="Tanglegram",value=TRUE),
-#      conditionalPanel(
-#         condition = "input.tanglegram==true",
-#      checkboxInput(inputId='sort',label="Sort",value=TRUE)),
-#      h2("Compare Fastgreedy to Edge Betweenness Communities"),
-#      plotOutput("communityComp1", height="800px",width="500px"),
-#      h2("Compare Fastgreedy to Walktrap Communities"),
-#      plotOutput("communityComp2", height="800px",width="500px"),
-#      h2("Compare Edge Betweenness to Walktrap Communities"),
-#      plotOutput("communityComp3", height="800px",width="500px")
-#   ),
    tabPanel("Compare All Algorithms",
       h2("Compare All Communities"),
       p(paste(
            "This computes all the community structures currently implemented.",
-           "This will take a while to compute, and will show a heatmap",
+           "This will take a while to compute (see upper right corner of", 
+           "the page), and will show a heatmap",
            "of a comparison between the communities.")),
       p(paste(
            "This uses the variation of information index of Meila,",
