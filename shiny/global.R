@@ -9,7 +9,7 @@ library(DT)
 library(scales)
 library(mclust)
 library(Rtsne)
-library(dendextend)
+#library(dendextend)
 library(fpc)
 #library(FlashGraphR)
 for(file in list.files("R",full.names=TRUE)){
