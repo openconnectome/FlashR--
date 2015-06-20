@@ -1,22 +1,13 @@
 communitiesTab <- function()
 {
    tabPanel("Communities",
+      h2("Community structure in the graph."),
       tabsetPanel(
       tabPanel("Single Algorithm",
       checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE),
       bsTooltip(id='dendPlot',
                 title="Plot a dendrogram of the communities. Not available for Infomap, Spinglass, Multilevel, Label Propation, Leading Eigenvalue t-SNE or Laplacian.",
                 placement='top'),
-      conditionalPanel(
-           condition = "input.dendPlot == false",
-      selectInput(inputId="CplotMethod",label="Plot Method",
-            choices=plot.methods,selected="Auto",selectize=FALSE),
-      sliderInput(inputId='CvertexSize',
-                       label="Vertex Size",min=1,max=15,
-                       value=5,step=1)
-      ),
-      selectInput(inputId="CvertexLabel",label="Vertex Label",
-            choices="None",selected="None",selectize=FALSE),
       selectInput(inputId="communities",label="Communities to Compute",
                    choices=communities.list,selected="Fast Greedy"),
       conditionalPanel(
@@ -51,8 +42,44 @@ communitiesTab <- function()
 #   ),
    tabPanel("Compare All Algorithms",
       h2("Compare All Communities"),
-      plotOutput("communityCompM", height="800px",width="500px")
+      p(paste(
+           "This computes all the community structures currently implemented.",
+           "This will take a while to compute, and will show a heatmap",
+           "of a comparison between the communities.")),
+      p(paste(
+           "This uses the variation of information index of Meila,",
+           "Journal of Multivariate Analysis, 98, 2007, 873-895",
+           "Columns are sorted by an equality distance -- it counts",
+           "the number of times two columns contain the same community",
+           "index for each row.")),
+      p(paste(
+         "To the right of a designator of the community algorithm",
+         "is a number indicating the number of communities",
+         "found by the given algorithm.",
+         "Note that gray level between rows is basically meaningless.")),
+      wellPanel(
+         fluidRow(
+            column(6,
+               h3("Heatmap comparison"),
+               plotOutput("communityCompM", height="800px",width="500px")
+            ),
+            column(6,
+               h3("Community Names"),
+               p("Laplac: Laplacian embedding + Mclust."),
+               p("RDPG: RDPG embedding + Mclust."),
+               p("t-SNE: t-SNE embedding + Mclust."),
+               p("Fast: fast greedy."),
+               p("Edge: edge betweenness."),
+               p("Walk: walktrap."),
+               p("LEigen: leading eigenvector."),
+               p("LabelP: label progagation."),
+               p("SpinG: spinglass."),
+               p("MulitL: multilevel."),
+               p("InfoM: infomap.")
+            )
+         )
+      )
+      )
    )
-   )
-   )
+)
 }

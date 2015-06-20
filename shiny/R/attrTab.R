@@ -1,7 +1,9 @@
 attrTab <- function(){
    tabPanel("Attributes of the Graph",
+    h2("The graph, edge and vertex attributes."),
     tabsetPanel(
          tabPanel("Graphical",
+         h3("Bar plots of the attributes."),
          wellPanel(
             fluidRow(
                column(6,
@@ -17,8 +19,8 @@ attrTab <- function(){
                   plotOutput("plotEA", height="250px"))))
          ),
       tabPanel("Tabular",
-   p("Tables of attributes. Note that for large graphs an error may be thrown due to the limitations of the datatable."),
-  p("It can take a while to load larger graphs, particularly ones with lots of attributes."),
+         h3("Tables of the attributes."),
+   p("Note that for large graphs an error may be thrown due to the limitations of the datatable function."),
          wellPanel(
             fluidRow(
       h3("Graph Attributes"),

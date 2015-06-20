@@ -1,7 +1,16 @@
 makeSidebar <- function()
 {
   sidebarPanel(
-  p("Select a graph to load. Currently only graphml formats are supported."),
+  p(paste("Select a graph to load.",
+          "Currently only graphml formats have been tested.",
+          "However, it should be able to process:",
+          paste(paste(eval(formals(read.graph)$format),collapse=", "),
+                '.',sep=''),
+       "It can take a while to load larger graphs,",
+       "particularly ones with lots of attributes.",
+       "Zipped graphs (humans) do not seem to load correctly at this time.",
+          collapse=" ")),
+  p("After selecting a graph, watch the 'Vertex Attributes' box for an indicator that the graph has loaded."),
   radioButtons(inputId="Source",label="Input Source",
       choices=c("Local Disk","Open Connectome"),
       selected="Local Disk"),
@@ -16,6 +25,8 @@ makeSidebar <- function()
                      selected=openconnectome.graphs$worm[[1]],
                      selectize=TRUE)),
   numericInput(inputId='seed',label="Random Number Seed",value=seed,
-      min=1,max=1000)
+      min=1,max=1000),
+            p("Clicking on `Plotting Parametes' opens/closes a menu of options for the plot."),
+            plottingOpts()
   )
 }

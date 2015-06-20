@@ -1,10 +1,13 @@
 invTab <- function()
 {
    tabPanel("Graph Invariants and Statistics",
+       h2("Compute various graph invariants."),
        tabsetPanel(
          tabPanel("Tabular",
+       p("Clicking on 'Select Invariants' opens/closes a selector to choose the invariants to compute."),
             bsCollapse(
                bsCollapsePanel(title="Select Invariants",
+       p("Note that some invariants (clique number for example) may take a very long time on even moderate sized graphs"),
                   checkboxGroupInput(inputId='invariantsList',
                       label="Invariants to Compute",
                       choices=invariants$Invariant,

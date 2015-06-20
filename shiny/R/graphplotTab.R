@@ -3,8 +3,6 @@ graphplotTab <- function()
    tabPanel("Graph Plotting",
       h2("Plot the graph and some of its attributes"),
       p("Select the tab to plot in the plane, in 3D, or to plot the adjacency matrix as an image."),
-            p("Clicking on `Plotting Parametes' opens/closes a menu of options for the plot."),
-            plottingOpts(),
       tabsetPanel("Plot Vertices/Edges",
          tabPanel("2D",
             h3("Two dimensional plots"),

@@ -115,6 +115,10 @@ observe({
      g
   })
 
+  ## For the RDPG method, the input$u field controls which singular
+  ## vectors are plotted:
+  ## if we are plotting in 2D, it concatenates u[,1] and v[,1].
+  ## if in 3D, it concatenates u[,1:2] and v[,1].
   layout <- reactive({
      set.seed(input$seed)
      g <- gGraph()
@@ -130,31 +134,7 @@ observe({
                KKinittemp=input$KKinittemp, 
                KKcoolexp=input$KKcoolexp,
                scaleLaplacian=input$scaleLaplacian,
-               dim=input$layoutD,plotOnly=TRUE,theta=input$theta)
-  })
-
-  ## to allow for different layouts on the graph tab than on the
-  ## communities tab. I've chosen to only do normalized Laplacian,
-  ## and for the RDPG it is cbind(u,v) unless the graph is undirected,
-  ## in which case it is u. Note that it doesn't scale by d, but that
-  ## only changes the component variances, and this is being passed to
-  ## mclust.
-  layoutC <- reactive({
-     set.seed(input$seed)
-     g <- gGraph()
-     getLayout(g, 
-               plotMethod=input$CplotMethod, 
-               u=ifelse(is.directed(g),"UV", "U"),
-               FRniter=input$FRniter,
-               FRcoolexp=input$FRcoolexp, 
-               circular=input$circular, 
-               star.center=input$star.center,
-               n=input$n, 
-               KKniter=input$KKniter, 
-               KKinittemp=input$KKinittemp, 
-               KKcoolexp=input$KKcoolexp,
-               scaleLaplacian=TRUE,dim=input$Cd,plotOnly=FALSE,
-               theta=input$Ctheta)
+               dim=as.numeric(input$layoutD),plotOnly=TRUE,theta=input$theta)
   })
 
   getSubsampled <- reactive({
@@ -302,7 +282,10 @@ observe({
            par(mar=mar)
         } else {
            plot(0,type='n',axes=FALSE,xlab='',ylab='',xlim=0:1,ylim=0:1)
-           text(.5,.4,'Graph loaded',pos=3)
+           g <- gGraph()
+           text(.5,.8,"Graph loaded.",pos=3,cex=2)
+           text(.5,.6,paste("|V| =",vcount(g)),pos=3)
+           text(.5,.5,paste("|E| =",ecount(g)),pos=3)
         }
      } 
   })
@@ -517,7 +500,7 @@ observe({
       }
       g <- gGraph()
       if(is.null(g)) return(NULL)
-      x <- layoutC()
+      x <- layout()
       cat("Layout (community):",dim(x),"|V|:",vcount(g),"\n")
       z <- getCommunities()
       if(input$communities == "RDPG" ||
@@ -530,7 +513,7 @@ observe({
          a <- order(as.numeric(names(m)))
          m <- m[a]
       }
-      vl <- input$CvertexLabel
+      vl <- input$vertexLabel
       if(vl == 'None') {
          labels <- NULL
       } else if(vl == 'Community'){
@@ -551,7 +534,7 @@ observe({
          }
          col <- colors.list[((m-1) %% length(colors.list))+1]
          plot(g,layout=x[,1:2],edge.color=ec,vertex.color=col,
-              vertex.size=input$CvertexSize,vertex.label=labels,
+              vertex.size=input$vertexSize,vertex.label=labels,
               main=paste(max(m),"Communities"))
       }
   })
