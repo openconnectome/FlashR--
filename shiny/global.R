@@ -58,10 +58,6 @@ plot.invariants <- c("Degree Distribution",
 
 
 openconnectome.dir <- "http://openconnecto.me/data/public/graphs/"
-openconnectome.animals <- c("cat","fly","macaque","mouse","rat",
-                            "worm","human")
-
-load("openConnectomeGraphs.RData")
 
 invariants <- data.frame(Invariant=c(
                            "Order",
