@@ -130,7 +130,7 @@ observe({
                KKinittemp=input$KKinittemp, 
                KKcoolexp=input$KKcoolexp,
                scaleLaplacian=input$scaleLaplacian,
-               dim=3,plotOnly=TRUE,theta=input$theta)
+               dim=input$layoutD,plotOnly=TRUE,theta=input$theta)
   })
 
   ## to allow for different layouts on the graph tab than on the
@@ -300,8 +300,11 @@ observe({
            par(mar=c(2,7,2,2))
            barplot(ta,horiz=TRUE,names=names(ta),xlab="",las=2,cex.axis=.75)
            par(mar=mar)
+        } else {
+           plot(0,type='n',axes=FALSE,xlab='',ylab='',xlim=0:1,ylim=0:1)
+           text(.5,.4,'Graph loaded',pos=3)
         }
-     }
+     } 
   })
 
   output$plotEA <- renderPlot({  
@@ -484,7 +487,7 @@ observe({
          } else {
             y <- x$u
          }
-         x <- Rtsne(y,pca=FALSE,theta=input$Ctheta)$Y
+         x <- Rtsne(y,pca=FALSE,theta=input$Ctheta,dims=input$TSNEdimension)$Y
          if(vcount(g)<=1000){
             z <- Mclust(x,G=input$CG[1]:input$CG[2])
          } else {
