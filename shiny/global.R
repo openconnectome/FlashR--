@@ -58,6 +58,7 @@ plot.invariants <- c("Degree Distribution",
 
 
 openconnectome.dir <- "http://openconnecto.me/data/public/graphs/"
+openconnectome.graphs <- getOpenConnectome(openconnectome.dir)
 
 invariants <- data.frame(Invariant=c(
                            "Order",

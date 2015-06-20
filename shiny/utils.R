@@ -10,26 +10,6 @@ html2txt <- function(str) {
 	      sep="\n",collapse="\n")
 }
 
-getOpenConnectomeList <- function()
-{
-   cat("Getting list of openconnectome graphs\n")
-
-   openconnectome.graphs <- vector('list',length(openconnectome.animals))
-   names(openconnectome.graphs) <- openconnectome.animals
-   for(i in 1:length(openconnectome.graphs)){
-      a <- scrape(paste(openconnectome.dir,openconnectome.animals[i],"/",sep=""),
-                  parse=FALSE)
-      x <- html2txt(a)
-      b <- gregexpr("\n([[:alnum:]]|[\\._])+\\.graphml\\.?([[:alnum:]]+)?\n",x)
-      openconnectome.graphs[[i]] <- gsub("\n","",unlist(regmatches(x,b)))
-   }
-
-   cat("Done\n")
-   openconnectome.graphs
-
-}
-
-
 computeInvariants <- function(g,invariantList)
 {
    cat("Computing Invariants:\n")
