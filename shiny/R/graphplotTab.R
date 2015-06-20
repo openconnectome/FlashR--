@@ -11,7 +11,7 @@ graphplotTab <- function()
                   plotOutput("plotgraph", height="800px")),
          tabPanel("3D",
          h3("Three dimensional plots"),
-                p("If the plot does not display, try selecting/deselecting alpha blending"),
+                p("If the plot does not display, try selecting/deselecting alpha blending."),
                 checkboxInput('UseAlpha3D',"Use Alpha Blending",TRUE),
                conditionalPanel(
                     condition = "input.UseAlpha3D == true",

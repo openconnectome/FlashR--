@@ -10,7 +10,7 @@ plottingOpts <- function(){
                          title="The type of layout for the graph.",
                          placement='top'),
                   bsTooltip(id='layoutD',
-                     title="Toggling the dimension can change the layout even for 2D plotting.",
+                     title="Toggling the dimension may change the layout even for 2D plotting.",
                      placement='top'),
                conditionalPanel(
                     condition = "input.plotMethod == 'Fruchterman Reingold' || input.plotMethod == 'Fruchterman Reingold Grid'",
