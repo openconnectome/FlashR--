@@ -160,7 +160,7 @@ observe({
      if(!is.null(g)){
         A <- getSubsampled()
         if(input$contour){
-           contour(1:nrow(A),1:ncol(A),A)
+           contour(1:nrow(A),1:ncol(A),A,xlab="",ylab="",axes=FALSE)
         } else {
            image(t(A)[nrow(A):1,])
         }
@@ -403,7 +403,7 @@ observe({
       g <- gGraph()
       if(is.null(g)) return(NULL)
       att <- list.vertex.attributes(g)
-      if(is.null(att)) return(NULL)
+      if(is.null(att) || length(att)==0) return(NULL)
       inv <- data.frame(Attribute=att,
                 Type=rep("numeric",length(att)),
                 Values=rep("",length(att)),
@@ -426,7 +426,7 @@ observe({
       g <- gGraph()
       if(is.null(g)) return(NULL)
       att <- list.edge.attributes(g)
-      if(is.null(att)) return(NULL)
+      if(is.null(att) || length(att)==0) return(NULL)
       inv <- data.frame(Attribute=att,
                 Type=rep("numeric",length(att)),
                 Values=rep("",length(att)),
