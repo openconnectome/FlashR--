@@ -387,7 +387,7 @@ observe({
       g <- gGraph()
       if(is.null(g)) return(NULL)
       att <- list.graph.attributes(g)
-      if(is.null(att)) return(NULL)
+      if(is.null(att) || length(att)==0) return(NULL)
       inv <- data.frame(Attribute=c(att,"|V|","|E|"),
                 Value=rep("",length(att)+2),
                 stringsAsFactors=FALSE)
