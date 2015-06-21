@@ -272,21 +272,20 @@ observe({
      if(!is.null(g)){
         if(input$vertexAtts != 'None'){
            a <- get.vertex.attribute(g,input$vertexAtts)
-           ta <- table(a)
-           ta <- sort(ta,decreasing=TRUE)
-           m <- min(30,length(ta))
-           ta <- rev(ta[1:m])
-           mar <- par('mar')
-           par(mar=c(2,7,2,2))
-           barplot(ta,horiz=TRUE,names=names(ta),xlab="",las=2,cex.axis=.75)
-           par(mar=mar)
-        } else {
-           plot(0,type='n',axes=FALSE,xlab='',ylab='',xlim=0:1,ylim=0:1)
-           g <- gGraph()
-           text(.5,.8,"Graph loaded.",pos=3,cex=2)
-           text(.5,.6,paste("|V| =",vcount(g)),pos=3)
-           text(.5,.5,paste("|E| =",ecount(g)),pos=3)
-        }
+           if(class(a)=='numeric'){
+              hist(a,xlab=input$vertexAtts,main="")
+           } else {
+              ta <- table(a)
+              ta <- sort(ta,decreasing=TRUE)
+              m <- min(30,length(ta))
+              ta <- rev(ta[1:m])
+              mar <- par('mar')
+              par(mar=c(2,7,2,2))
+              barplot(ta,horiz=TRUE,names=names(ta),xlab="",
+                      las=2,cex.axis=.75)
+              par(mar=mar)
+           }
+        } 
      } 
   })
 
@@ -295,16 +294,21 @@ observe({
      if(!is.null(g)){
         if(input$edgeAtts != 'None'){
            a <- get.edge.attribute(g,input$edgeAtts)
-           ta <- table(a)
-           ta <- sort(ta,decreasing=TRUE)
-           m <- min(30,length(ta))
-           ta <- rev(ta[1:m])
-           mar <- par('mar')
-           par(mar=c(2,7,2,2))
-           barplot(ta,horiz=TRUE,names=names(ta),xlab="",las=2,cex.axis=.75)
-           par(mar=mar)
-        }
-     }
+           if(class(a)=='numeric'){
+              hist(a,xlab=input$edgeAtts,main="")
+           } else {
+              ta <- table(a)
+              ta <- sort(ta,decreasing=TRUE)
+              m <- min(30,length(ta))
+              ta <- rev(ta[1:m])
+              mar <- par('mar')
+              par(mar=c(2,7,2,2))
+              barplot(ta,horiz=TRUE,names=names(ta),xlab="",
+                      las=2,cex.axis=.75)
+              par(mar=mar)
+           }
+        } 
+     } 
   })
 
   output$plotinvariants <- renderPlot({  
@@ -384,8 +388,11 @@ observe({
       if(is.null(g)) return(NULL)
       att <- list.graph.attributes(g)
       if(is.null(att)) return(NULL)
-      inv <- data.frame(Attribute=att,Value=rep("",length(att)),
+      inv <- data.frame(Attribute=c(att,"|V|","|E|"),
+                Value=rep("",length(att)+2),
                 stringsAsFactors=FALSE)
+      inv[length(att)+1,'Value'] <- vcount(g)
+      inv[length(att)+2,'Value'] <- ecount(g)
       for(i in 1:length(att)){
          inv[i,2] <- get.graph.attribute(g,att[i])
       }
@@ -397,11 +404,20 @@ observe({
       if(is.null(g)) return(NULL)
       att <- list.vertex.attributes(g)
       if(is.null(att)) return(NULL)
-      inv <- as.data.frame(matrix("",nrow=vcount(g),ncol=length(att)),
+      inv <- data.frame(Attribute=att,
+                Type=rep("numeric",length(att)),
+                Values=rep("",length(att)),
                 stringsAsFactors=FALSE)
-      colnames(inv) <- att
       for(i in 1:length(att)){
-         inv[,i] <- get.vertex.attribute(g,att[i])
+         a <- get.vertex.attribute(g,att[i])
+         inv[i,"Type"] <- class(a)
+         if(class(a)=='numeric'){
+            inv[i,"Values"] <- paste("range:",
+                                 paste(round(range(a,na.rm=TRUE),3),
+                                       collapse=" -- "))
+         } else {
+            inv[i,"Values"] <- paste("#unique:",length(unique(a)),collapse=" ")
+         }
       }
       datatable(inv,rownames=FALSE)
   })
@@ -411,11 +427,20 @@ observe({
       if(is.null(g)) return(NULL)
       att <- list.edge.attributes(g)
       if(is.null(att)) return(NULL)
-      inv <- as.data.frame(matrix("",nrow=ecount(g),ncol=length(att)),
+      inv <- data.frame(Attribute=att,
+                Type=rep("numeric",length(att)),
+                Values=rep("",length(att)),
                 stringsAsFactors=FALSE)
-      colnames(inv) <- att
       for(i in 1:length(att)){
-         inv[,i] <- get.edge.attribute(g,att[i])
+         a <- get.edge.attribute(g,att[i])
+         inv[i,"Type"] <- class(a)
+         if(class(a)=='numeric'){
+            inv[i,"Values"] <- paste("range:",
+                                 paste(round(range(a,na.rm=TRUE),3),
+                                       collapse=" -- "))
+         } else {
+            inv[i,"Values"] <- paste("#unique:",length(unique(a)),collapse=" ")
+         }
       }
       datatable(inv,rownames=FALSE)
   })

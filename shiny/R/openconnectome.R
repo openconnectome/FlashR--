@@ -2,6 +2,7 @@
 
 getOpenConnectome <- function(openconnectome.dir)
 {
+   cat("Getting the openconnecto.me list of graphs\n")
    a <- try(scrape(openconnectome.dir),silent=TRUE) 
    if(inherits(a,'try-error')){
       cat("Could not access openconnecto.me. Using cached data.")
@@ -22,5 +23,6 @@ getOpenConnectome <- function(openconnectome.dir)
       graphs <- graphs[grep('Parent Directory',graphs,invert=TRUE)]
       tree[[i]] <- graphs
    }
+   cat("Done\n")
    tree
 }

@@ -10,7 +10,6 @@ makeSidebar <- function()
        "particularly ones with lots of attributes.",
        "Zipped graphs (humans) do not seem to load correctly at this time.",
           collapse=" ")),
-  p("After selecting a graph, watch the 'Vertex Attributes' box for an indicator that the graph has loaded."),
   radioButtons(inputId="Source",label="Input Source",
       choices=c("Local Disk","Open Connectome"),
       selected="Local Disk"),
