@@ -4,14 +4,9 @@ plottingOpts <- function(){
       p("Plotting the graph may take a long time unless the fast plotting option is checked."),
                selectInput(inputId="plotMethod",label="Plot Method",
                   choices=plot.methods,selected=plot.methods[1],selectize=FALSE),
-                  radioButtons(inputId='layoutD',label="Layout dimension",
-                      choices=2:3,selected=2),
                bsTooltip(id='plotMethod',
                          title="The type of layout for the graph.",
                          placement='top'),
-                  bsTooltip(id='layoutD',
-                     title="Toggling the dimension may change the layout even for 2D plotting.",
-                     placement='top'),
                conditionalPanel(
                     condition = "input.plotMethod == 'Fruchterman Reingold' || input.plotMethod == 'Fruchterman Reingold Grid'",
                        selectInput(inputId="FRniter",label="Number of Iterations",
@@ -54,6 +49,19 @@ plottingOpts <- function(){
                        selectInput(inputId="KKcoolexp",label="Cooling exponent",
                             choices=c(0.1,0.5,0.99,1,3,5,10),selected=0.99)
                ),
+               conditionalPanel(
+                    condition = "input.plotMethod == 'Coordinates'",
+                    selectInput(inputId="coordinates",label="Coordinates",
+                    choices=NULL,selected=NULL,multiple=TRUE),
+                   bsTooltip(id='coordinates',
+                   title="Select up to 3 coordinates. If you select more than 3 only the first 3 on the list will be selected. Categoricals will be given integer values.",
+                    placement='top')
+               ),
+                  radioButtons(inputId='layoutD',label="Layout dimension",
+                      choices=2:3,selected=2),
+                  bsTooltip(id='layoutD',
+                     title="Toggling the dimension may change the layout even for 2D plotting.",
+                     placement='top'),
                checkboxInput('fast',"Fast Plotting",TRUE),
                 checkboxInput('UseAlpha',"Use Alpha Blending",TRUE),
                conditionalPanel(

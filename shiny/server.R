@@ -101,6 +101,8 @@ observe({
             choices=c("None","Community",vertexLabels),selected="Community")
         updateSelectInput(session,inputId="vertexAtts",
             choices=vertexLabels,selected="None")
+        updateSelectInput(session,inputId="coordinates",
+            choices=vertexLabels[-grep("None",vertexLabels)])
         edgeLabels <- union("None",list.edge.attributes(g))
         updateSelectInput(session,inputId="edgeLabel",
             choices=edgeLabels,selected="None")
@@ -134,7 +136,8 @@ observe({
                KKinittemp=input$KKinittemp, 
                KKcoolexp=input$KKcoolexp,
                scaleLaplacian=input$scaleLaplacian,
-               dim=as.numeric(input$layoutD),plotOnly=TRUE,theta=input$theta)
+               dim=as.numeric(input$layoutD),plotOnly=TRUE,theta=input$theta,
+               coords=input$coordinates)
   })
 
   getSubsampled <- reactive({
@@ -172,6 +175,7 @@ observe({
      g <- gGraph()
      if(!is.null(g)){
         x <- layout()
+        if(is.null(x)) return(NULL)
         cat("Layout (plot):",dim(x),vcount(g),"\n")
         if(input$sizeByVar && input$vertexAttsSize != 'None'){
            size <- get.vertex.attribute(g,input$vertexAttsSize)
@@ -261,6 +265,7 @@ observe({
         progress$set(message = 'Computing the 3d plot',
                      detail='Please be patient...')
         x <- layout()
+        if(is.null(x)) return(NULL)
         progress$set(value=1)
         fastPlot3D(g,x,input$UseAlpha3D,input$alphaLevel3D,input$randomZ)
         progress$set(value=10)
@@ -342,6 +347,7 @@ observe({
            cols <- rep(1,vcount(g))
            cols[a] <- 2
            x <- layout()
+           if(is.null(x)) return(NULL)
            plot(g,layout=x,vertex.color=cols,
                      vertex.frame.color=cols,vertex.size=3)
            title("Articulation Points")
@@ -530,6 +536,7 @@ observe({
       g <- gGraph()
       if(is.null(g)) return(NULL)
       x <- layout()
+      if(is.null(x)) return(NULL)
       cat("Layout (community):",dim(x),"|V|:",vcount(g),"\n")
       z <- getCommunities()
       if(input$communities == "RDPG" ||
