@@ -6,6 +6,7 @@ communitiesTab <- function()
       tabPanel("Single Algorithm",
       selectInput(inputId="communities",label="Communities to Compute",
                    choices=communities.list,selected="Fast Greedy"),
+      checkboxInput(inputId='usecomm',label='Use community for x-axis',FALSE),
       conditionalPanel(
          condition = "input.communities == 'Walktrap' || input.communities == 'Fast Greedy' || input.communities == 'Edge Betweenness'",
       checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE)),
@@ -24,7 +25,10 @@ communitiesTab <- function()
                 label="Theta",value=0.5,min=0,max=1,step=0.1)
             
       ),
-      plotOutput("communityPlot", height="1800px",width="1800px"),
+      p("Click on a vertex to view values."),
+      verbatimTextOutput('comm_info'),
+      plotOutput("communityPlot", height="1800px",width="1800px",
+                 click="comm_click"),
       br(),br()
    ),
    tabPanel("Compare All Algorithms",

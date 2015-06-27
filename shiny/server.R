@@ -13,6 +13,7 @@ observe({
    
   gGraph <- reactive({
      g <- NULL
+     cat(names(input),"\n")
      if(input$Source=='Local Disk'){
         if(!is.null(input$graphFile)){
            format <- "graphml"
@@ -101,8 +102,15 @@ observe({
             choices=c("None","Community",vertexLabels),selected="Community")
         updateSelectInput(session,inputId="vertexAtts",
             choices=vertexLabels,selected="None")
-        updateSelectInput(session,inputId="coordinates",
-            choices=vertexLabels[-grep("None",vertexLabels)])
+        vl <- vertexLabels[-grep("None",vertexLabels)]
+        if(length(vl)>0){
+           updateRadioButtons(session,inputId="xcoordinates",
+               choices=vl,selected=vl[1])
+           updateRadioButtons(session,inputId="ycoordinates",
+               choices=vl,selected=vl[min(2,length(vl))])
+           updateRadioButtons(session,inputId="zcoordinates",
+               choices=vl,selected=vl[min(3,length(vl))])
+        }
         edgeLabels <- union("None",list.edge.attributes(g))
         updateSelectInput(session,inputId="edgeLabel",
             choices=edgeLabels,selected="None")
@@ -137,7 +145,9 @@ observe({
                KKcoolexp=input$KKcoolexp,
                scaleLaplacian=input$scaleLaplacian,
                dim=as.numeric(input$layoutD),plotOnly=TRUE,theta=input$theta,
-               coords=input$coordinates)
+               xcoords=input$xcoordinates,
+               ycoords=input$ycoordinates,
+               zcoords=input$zcoordinates)
   })
 
   getSubsampled <- reactive({
@@ -170,6 +180,81 @@ observe({
      }
   })
 
+  output$info <- renderText({
+     x <- input$plot_click$x
+     y <- input$plot_click$y
+     g <- gGraph()
+     values <- ""
+     if(!is.null(g)){
+        points <- layout()
+        if(!is.null(points)){
+            if(!input$fast) {
+               points <- layout.norm(points,-1,1,-1,1)
+            }
+            a <- which.min(abs(points[,1]-x)+abs(points[,2]-y))
+            atts <- list.vertex.attributes(g)
+            if(length(atts)==0) return(paste("Vertex:",a))
+            for(i in 1:length(atts)){
+               allatts <- get.vertex.attribute(g,atts[i])
+               values <- paste(values,"\n",
+                               paste(atts[i]," (",
+                                     length(unique(allatts)),") : ",
+                                     allatts[a],
+                                     sep=""))
+            }
+            din <- degree(g,v=a,mode='in')
+            dout <- degree(g,v=a,mode='out')
+            values <- paste(values,"\n",
+                            "In degree:",din,"\n",
+                            "Out degree:",dout)
+        }
+     }
+     values
+  })
+
+  output$comm_info <- renderText({
+     x <- input$comm_click$x
+     y <- input$comm_click$y
+     g <- gGraph()
+     values <- ""
+     if(!is.null(g)){
+        points <- layout()
+        if(!is.null(points)){
+            z <- getCommunities()
+            if(input$communities == "RDPG" ||
+               input$communities == "t-SNE" ||
+               input$communities == "Laplacian" 
+            ){
+               m <- z$classification
+            } else {
+               m <- membership(z)
+            }
+            if(input$usecomm) points[,1] <- m
+            if(!input$fast) {
+               points <- layout.norm(points,-1,1,-1,1)
+            }
+            a <- which.min(abs(points[,1]-x)+abs(points[,2]-y))
+            atts <- list.vertex.attributes(g)
+            if(length(atts)==0) return(paste("Vertex:",a))
+            for(i in 1:length(atts)){
+               allatts <- get.vertex.attribute(g,atts[i])
+               values <- paste(values,"\n",
+                               paste(atts[i]," (",
+                                     length(unique(allatts)),") : ",
+                                     allatts[a],
+                                     sep=""))
+            }
+            din <- degree(g,v=a,mode='in')
+            dout <- degree(g,v=a,mode='out')
+            values <- paste(values,"\n",
+                            "In degree:",din,"\n",
+                            "Out degree:",dout)
+           values <- paste(values,"\n","Community:",m[a])
+        }
+     }
+     values
+  })
+
   ### Generate plot output
   output$plotgraph <- renderPlot({  
      g <- gGraph()
@@ -177,83 +262,20 @@ observe({
         x <- layout()
         if(is.null(x)) return(NULL)
         cat("Layout (plot):",dim(x),vcount(g),"\n")
-        if(input$sizeByVar && input$vertexAttsSize != 'None'){
-           size <- get.vertex.attribute(g,input$vertexAttsSize)
-           if(all(is.numeric(size))){
-              size <- 3*size/max(size)
-           } else {
-              warning("sizing vertices using a non-numeric label")
-              a <- sort(unique(size))
-              size <- match(size,a)
-              size <- 3*size/max(size)
-           }
-        } else {
-           size <- input$vertexSize
-        }
-        color <- "SkyBlue"
-        if(input$colorByVar && input$vertexAttsColor != 'None'){
-           color <- get.vertex.attribute(g,input$vertexAttsColor)
-           vars <- color
-           if(all(is.numeric(color))){
-              if(diff(range(color))!=0) {
-                 color <- gray((max(color)-color)/(max(color)-min(color)))
-              }
-           } else {
-              a <- sort(unique(color))
-              color <- match(color,a)
-           }
-           legnd <- unique(data.frame(name=vars,color=color,
-                           stringsAsFactors=FALSE))
-           legnd <- legnd[order(legnd$name),]
-        } 
-        if(input$fast){
-           fastPlot(g,x,input$UseAlpha,input$alphaLevel,size,
-           color=color)
-        } else {
-           vl <- input$vertexLabel
-           if(vl=='None') vl <- NA
-           else vl <- get.vertex.attribute(g,vl)
-           el <- input$edgeLabel
-           if(el=='None') el <- NA
-           else el <- get.edge.attribute(g,el)
-           weight <- 1
-           if(input$useWeights) {
-              if('weight' %in% list.edge.attributes(g)){
-                 weight <- get.edge.attribute(g,'weight')
-              }
-           }
-           ec <- input$edgeColor
-           if(ec=='None') {
-              ec <- 1
-           } else {
-              att <- get.edge.attribute(g,ec)
-              uatt <- unique(att)
-              ec <- ((match(att,uatt)-1) %% 8) + 1
-           }
-           if(input$UseAlpha) ec <- alpha(ec,input$alphaLevel)
-           plot(g,vertex.size=size,vertex.label=vl,
-                vertex.color=color,
-                edge.width=weight,edge.label=el,
-                edge.color=ec,
-                layout=x)
-        }
-        if(input$showLegend){
-           n <- nrow(legnd)
-           if(n>40){
-              nc <- 5
-           } else if(n>30) {
-              nc <- 4
-           } else if(n>20) {
-              nc <- 3
-           } else if(n>10) {
-              nc <- 2
-           } else {
-              nc <- 1
-           }
-           legend(x="topright",legend=legnd$name,col=legnd$color,
-                  ncol=nc,
-                  pch=20)
-        }
+        plotGraph(x,g,
+               input$sizeByVar,
+               input$vertexAttsSize,
+               input$vertexLabel,
+               input$vertexSize,
+               input$vertexAttsColor,
+               input$colorByVar,
+               input$fast,
+               input$UseAlpha,
+               input$alphaLevel,
+               input$edgeLabel,
+               input$edgeColor,
+               input$useWeights,
+               input$showLegend)
      }
   })
 
@@ -546,9 +568,8 @@ observe({
          m <- z$classification
       } else {
          m <- membership(z)
-         a <- order(as.numeric(names(m)))
-         m <- m[a]
       }
+      if(input$usecomm) x[,1] <- m
       vl <- input$vertexLabel
       if(vl == 'None') {
          labels <- NULL
@@ -560,18 +581,23 @@ observe({
       if(dp){
          dendPlot(z,labels=labels,main=paste(max(m),"Communities"))
       } else {
-         ec <- input$edgeColor
-         if(ec=='None') {
-            ec <- 1
-         } else {
-            att <- get.edge.attribute(g,ec)
-            uatt <- unique(att)
-            ec <- ((match(att,uatt)-1) %% 8) + 1
-         }
          col <- colors.list[((m-1) %% length(colors.list))+1]
-         plot(g,layout=x[,1:2],edge.color=ec,vertex.color=col,
-              vertex.size=input$vertexSize,vertex.label=labels,
-              main=paste(max(m),"Communities"))
+         plotGraph(x,g,
+               sizeByVar=input$sizeByVar,
+               vertexAttsSize=input$vertexAttsSize,
+               vertexLabel=input$vertexLabel,
+               vertexSize=input$vertexSize,
+               vertexAttsColor=input$vertexAttsColor,
+               colorByVar=FALSE,
+               fast=input$fast,
+               UseAlpha=input$UseAlpha,
+               alphaLevel=input$alphaLevel,
+               edgeLabel=input$edgeLabel,
+               edgeColor=input$edgeColor,
+               useWeights=input$useWeights,
+               showLegend=FALSE,
+               color=col)
+              title(paste(max(m),"Communities"))
       }
   })
 
@@ -635,12 +661,15 @@ observe({
      rownames(M) <- paste(c("Laplac","RDPG","t-SNE",
                       "Fast","Edge","Walk",
                       "LEigen","LabelP","SpinG","MultiL","InfoM"),a)
+     colnames(M) <- V(g)
      a <- hclust(eqDist(t(M)),method='ward.D2')
      M[,a$order]
   })
 
   output$communityCompM <- renderPlot({  
-     heatmap(getCommunitiesMatrix(),labCol=NA,col=gray((255:0)/255),
+     coms <<- getCommunitiesMatrix()
+     cat("communities computed\n")
+     heatmap(coms,labCol=NA,col=gray((255:0)/255),
              distfun=meila,Colv=NA)
   })
 

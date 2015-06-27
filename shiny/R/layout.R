@@ -2,7 +2,7 @@
 getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
     circular, star.center,
    n, KKniter, KKinittemp, KKcoolexp, scaleLaplacian,dim=3,
-   plotOnly=TRUE,theta,coords)
+   plotOnly=TRUE,theta,xcoords,ycoords,zcoords)
 {
   if(is.null(g)) return(NULL)
   layout <- paste('layout',gsub(" ",".",tolower(plotMethod)),
@@ -50,11 +50,11 @@ getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
                                           inittemp=KKinittemp,
                                           coolexp=KKcoolexp,dim=dim)
   } else if(layout =='layout.coordinates'){
-     if(length(coords)<2) {
+     if(is.null(xcoords) || is.null(ycoords) || (dim==3 && is.null(zcoords))){
          return(NULL)
      } else {
-        a1 <- get.vertex.attribute(g,coords[1])
-        a2 <- get.vertex.attribute(g,coords[2])
+        a1 <- get.vertex.attribute(g,xcoords)
+        a2 <- get.vertex.attribute(g,ycoords)
         if(!is.numeric(a1)){
            a1 <- match(a1,unique(a1))
         }
@@ -62,8 +62,8 @@ getLayout <- function(g,plotMethod,u, FRniter, FRcoolexp,
            a2 <- match(a2,unique(a2))
         }
         layout <- cbind(x=a1,y=a2)
-        if(length(coords)>2) {
-           a3 <- get.vertex.attribute(g,coords[3])
+        if(dim==3) {
+           a3 <- get.vertex.attribute(g,zcoords)
            if(!is.numeric(a3)){
               a3 <- match(a3,unique(a3))
            }

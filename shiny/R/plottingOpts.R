@@ -51,11 +51,20 @@ plottingOpts <- function(){
                ),
                conditionalPanel(
                     condition = "input.plotMethod == 'Coordinates'",
-                    selectInput(inputId="coordinates",label="Coordinates",
-                    choices=NULL,selected=NULL,multiple=TRUE),
-                   bsTooltip(id='coordinates',
-                   title="Select up to 3 coordinates. If you select more than 3 only the first 3 on the list will be selected. Categoricals will be given integer values.",
-                    placement='top')
+                    wellPanel(
+                     fluidRow(
+                     column(4,
+                    radioButtons(inputId="xcoordinates",
+                    label="X Coordinate",
+                    choices="None",selected=NULL)),
+                     column(4,
+                    radioButtons(inputId="ycoordinates",
+                    label="Y Coordinate",
+                    choices="None",selected=NULL)),
+                     column(4,
+                    radioButtons(inputId="zcoordinates",
+                    label="Z Coordinate",
+                    choices="None",selected=NULL))))
                ),
                   radioButtons(inputId='layoutD',label="Layout dimension",
                       choices=2:3,selected=2),
@@ -70,7 +79,7 @@ plottingOpts <- function(){
                             min=0.0005,max=.25,value=0.1,step=0.0005)
                ),
                bsTooltip(id='fast',
-                   title="Fast plotting only plots vertices and edges, no arrows. It is typically faster than the igraph plot, but less flexible.",
+                   title="Fast plotting only plots vertices and straight, single edges. No loops or multiple edges. It is typically faster than the igraph plot, but less flexible.",
                          placement='top'),
          checkboxInput(inputId='sizeByVar',
                        label='Size vertices by variable',
