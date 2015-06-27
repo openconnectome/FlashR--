@@ -13,7 +13,6 @@ observe({
    
   gGraph <- reactive({
      g <- NULL
-     cat(names(input),"\n")
      if(input$Source=='Local Disk'){
         if(!is.null(input$graphFile)){
            format <- "graphml"
@@ -196,10 +195,18 @@ observe({
             if(length(atts)==0) return(paste("Vertex:",a))
             for(i in 1:length(atts)){
                allatts <- get.vertex.attribute(g,atts[i])
+               if(is.numeric(allatts)) {
+                  nstr <- paste0("range: ",
+                          round(min(allatts,na.rm=TRUE),3),
+                          " -- ",
+                          round(max(allatts,na.rm=TRUE),3))
+               } else {
+                  nstr <- paste0("#values: ",length(unique(allatts)))
+               }
                values <- paste(values,"\n",
-                               paste(atts[i]," (",
-                                     length(unique(allatts)),") : ",
+                               paste(atts[i],": ",
                                      allatts[a],
+                                     " (", nstr,")",
                                      sep=""))
             }
             din <- degree(g,v=a,mode='in')
@@ -238,10 +245,18 @@ observe({
             if(length(atts)==0) return(paste("Vertex:",a))
             for(i in 1:length(atts)){
                allatts <- get.vertex.attribute(g,atts[i])
+               if(is.numeric(allatts)) {
+                  nstr <- paste0("range: ",
+                          round(min(allatts,na.rm=TRUE),3),
+                          " -- ",
+                          round(max(allatts,na.rm=TRUE),3))
+               } else {
+                  nstr <- paste0("#values: ",length(unique(allatts)))
+               }
                values <- paste(values,"\n",
-                               paste(atts[i]," (",
-                                     length(unique(allatts)),") : ",
+                               paste(atts[i],": ",
                                      allatts[a],
+                                     " (", nstr,")",
                                      sep=""))
             }
             din <- degree(g,v=a,mode='in')
