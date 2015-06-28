@@ -16,7 +16,8 @@ shinyUI(pageWithSidebar(
        graphplotTab(),
        ## Graph invariants and statistics
        invTab(),
-       communitiesTab()
+       communitiesTab(),
+       fusionTab()
    )
   )
 ))

@@ -40,20 +40,21 @@ communitiesTab <- function()
            "of a comparison between the communities.")),
       p(paste(
            "This uses the variation of information index of Meila,",
-           "Journal of Multivariate Analysis, 98, 2007, 873-895",
-           "Columns are sorted by an equality distance -- it counts",
-           "the number of times two columns contain the same community",
-           "index for each row.")),
+           "Journal of Multivariate Analysis, 98, 2007, 873-895.")),
       p(paste(
          "To the right of a designator of the community algorithm",
          "is a number indicating the number of communities",
-         "found by the given algorithm.",
-         "Note that gray level between rows is basically meaningless.")),
+         "found by the given algorithm.")),
+      p(paste(
+          "Depending on your browser, the gray levels may appear a bit off.",
+          "The diagonal should be pure white, and the matrix symmetric.",
+          "Variations from this are an artefact of the display.")),
       wellPanel(
          fluidRow(
             column(6,
                h3("Heatmap comparison"),
-               plotOutput("communityCompM", height="800px",width="500px")
+               plotOutput("communityCompM", height="800px",width="500px",
+                          click="communityImage_click")
             ),
             column(6,
                h3("Community Names"),
@@ -67,7 +68,8 @@ communitiesTab <- function()
                p("LabelP: label progagation."),
                p("SpinG: spinglass."),
                p("MulitL: multilevel."),
-               p("InfoM: infomap.")
+               p("InfoM: infomap."),
+               verbatimTextOutput("communityM_info")
             )
          )
       )

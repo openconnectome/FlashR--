@@ -15,7 +15,7 @@ meila <- function(x,...)
          M[j,i] <- M[i,j]
       }
    }
-   as.dist(M)
+   M
 }
 
 eqDist <- function(x,...)

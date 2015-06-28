@@ -4,10 +4,6 @@ shinyServer(function(input, output, session) {
 set.seed(seed)
 
 observe({
-   cat("Open Connectome graph:",input$openconnectome,"\n")
-})
-
-observe({
    set.seed(input$seed)
 })
    
@@ -681,11 +677,42 @@ observe({
      M[,a$order]
   })
 
-  output$communityCompM <- renderPlot({  
-     coms <<- getCommunitiesMatrix()
-     cat("communities computed\n")
-     heatmap(coms,labCol=NA,col=gray((255:0)/255),
-             distfun=meila,Colv=NA)
+  getHeatmapOrder <- reactive({
+     M <- getCommunitiesMatrix()
+     D <- meila(M)
+     heatmap2(D)
   })
 
+  output$communityCompM <- renderPlot({  
+     coms <<- getCommunitiesMatrix()
+     D <- meila(coms)
+     rownames(D) <- rownames(coms)
+     colnames(D) <-  gsub(" [[:digit:]]{1,}","",rownames(coms))
+     cat("communities computed\n")
+     heatmap(D,col=gray((255:0)/255))
+  })
+
+  output$communityM_info <- renderText({
+     M <- getCommunitiesMatrix()
+     h <- getHeatmapOrder()
+     D <- meila(M)
+     rnames <- gsub(" [[:digit:]]{1,}","",rownames(M)[h$rowInd])
+     ## constants in these formulae are empirical due to
+     ## the fact that heatmap does a layout, and the coordinates
+     ## are all wonky
+     a <- seq(0.07,0.96,length=ncol(D))
+     b <- seq(0.18,0.72,length=nrow(D))
+     x <- input$communityImage_click$x
+     y <- input$communityImage_click$y
+     if(!is.null(x)){
+        j <- which.min(abs(x-a))
+        i <- which.min(abs(y-b))
+        if(i != j){
+           paste(rnames[i],"vs",rnames[j],"\n\t",
+                 round(D[i,j],3),"of",
+                 round(min(D,na.rm=TRUE),3),"--",
+                 round(max(D,na.rm=TRUE),3),"\n")
+        }
+     }
+  })
 })
