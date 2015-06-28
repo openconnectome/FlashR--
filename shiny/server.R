@@ -715,4 +715,51 @@ observe({
         }
      }
   })
+
+  getFusionEmbedding <- reactive({
+     set.seed(input$seed)
+     z <- NULL
+     progress <- Progress$new(session,min=1,max=10)
+     on.exit(progress$close())
+     progress$set(message = 'Computing Embedding and clustering',
+                        detail='This may take a while...')
+     g <- gGraph()
+     if(!is.null(g)){
+        atts <- list.vertex.attributes(g)
+        if(is.null(atts)){
+           return(NULL)
+        }
+        x <- NULL
+        for(att in atts){
+           y <- get.vertex.attribute(g,att)
+           if(is.numeric(y)){
+              cat("using attribute:",att,"\n")
+              y[is.na(y)] <- 0
+              x <- cbind(x,y)
+           }
+        }
+        if(is.null(x)) return(NULL)
+        z <- fuseGraphCovariates(g,x,lambda=input$lambda,k=input$fusek,
+                    no=input$Fd,
+                    base.matrix=ifelse(input$fusion=="RDPG",
+                                       "adjacency","laplacian"))
+        if(input$append) z <- cbind(z,x)
+        z[is.na(z)] <- 0
+     }
+     z
+  })
+
+  output$fusionPlot <- renderPlot({  
+     z <- getFusionEmbedding()
+     if(!is.null(z)){
+        progress <- Progress$new(session,min=1,max=10)
+        on.exit(progress$close())
+        progress$set(message = 'Computing Clustering',
+                           detail='This may take a while...')
+        m <- Mclust(z,G=input$FG[1]:input$FG[2])
+        plot(z,pch=20,col=m$classification,main=paste(m$G,"clusters"),
+             xlab=expression(x[1]),ylab=expression(x[2]))
+     }
+  })
+
 })

@@ -6,8 +6,17 @@ graph_spectral_embedding <- function(h,d=10,weighted=FALSE,
                                      svd.method=1,
                                      ...)
 {
-   if(vcount(h)==1) return(list(u=matrix(0,ncol=d),d=0))
-   if(vcount(h)==2) return(list(u=rbind(c(1,0),c(0,1)),d=c(1,1)))
+   if(vcount(h)==1) return(list(u=matrix(0,nrow=1,ncol=d),
+                                v=matrix(0,nrow=1,ncol=d),d=0))
+   if(vcount(h)==2) {
+      if(d==1) return(list(u=matrix(0,nrow=1,ncol=1),
+                           v=matrix(0,nrow=1,ncol=1),d=1))
+      u <- matrix(0,nrow=2,ncol=d)
+      u[1,1] <- 1
+      u[2,2] <- 1
+      v <- matrix(0,nrow=2,ncol=d)
+      return(list(u=u,v=v,d=c(1,1)))
+   }
    if(any(diagonal<0) && m==2) {
       warning("negative diagonal -- matrix might not be positive definite")
    }
@@ -39,7 +48,6 @@ graph_spectral_embedding <- function(h,d=10,weighted=FALSE,
       o <- order(z$values,decreasing=FALSE)
       u <- z$vectors[,o]
       val <- z$values[o]
-      cat("eigs:",val,"\n")
       u <- u[,-1]
       val <- val[-1]
       out <- list(u=u,d=val)
@@ -98,8 +106,9 @@ graph.spectral.embedding <- function(g,
                                        ...)
          a <- 1:min(d,nh)
          u[inds,a] <- z$u
-         if(m==1)
+         if(m==1){
             v[inds,a] <- z$v
+         }
          s[i,a] <- z$d
       }
    } else {
@@ -133,7 +142,6 @@ computeLaplacian <- function(g,d,normalize)
      out <- graph.spectral.embedding(g,d,
                    normalize=normalize,base.matrix="laplacian",
                     diagonal.method="constant")
-     cat("remaining eigs:",out$values,"\n")
      out$u
 }
 
