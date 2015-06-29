@@ -54,29 +54,29 @@ observe({
             }
            t1 <- system.time( 
               if(grepl("\\.zip$",file)){
-                 progress <- Progress$new(session,min=1,max=10)
-                 on.exit(progress$close())
-                 progress$set(message = 'Download in progress',
-                           detail='This may take a while...')
-                 progress$set(value=1)
+                 withProgress(message='Download in progress',
+                     detail='This will take a while...',value=0,
+                 {
+                 incProgress(1/10)
                  tf <- paste(tempfile(),"zip",sep='.')
                  t2 <- system.time(download.file(file,tf))
                  print(t2)
                  wd <- getwd()
                  setwd(tempdir())
                  gr <- sub("\\.zip$","",input$openconnectome)
-                 progress$set(message = 'Unzipping graph')
+                 incProgress(2/10,detail = 'Unzipping graph')
                  cat("unzipping",tf,"extracting",gr,"\n")
                  unzip(tf,gr)
+                 incProgress(2/10,detail = 'graph unzipped')
                  unlink(tf)
-                 progress$set(value=3)
-                 progress$set(message = 'Reading in graph',
-                           detail='This too may take a while...')
+                 incProgress(7/10,detail = 'reading graph')
                  cat("reading",gr,"\n")
                  t2 <- system.time(g <- read.graph(gr,format=format))
                  print(t2)
                  unlink(gr)
                  setwd(wd)
+                 incProgress(10/10,detail = 'done')
+                 })
               } else {
                  g <- read.graph(file,format=format)
               }
@@ -291,17 +291,18 @@ observe({
   })
 
   output$plotgraph3d <- renderWebGL({  
-     g <- gGraph()
-     if(!is.null(g)){
-        progress <- Progress$new(session,min=1,max=10)
+        progress <- Progress$new(session,min=1,max=4)
         on.exit(progress$close())
         progress$set(message = 'Computing the 3d plot',
                      detail='Please be patient...')
+     g <- gGraph()
+        progress$set(value=2)
+     if(!is.null(g)){
         x <- layout()
+        progress$set(value=3)
         if(is.null(x)) return(NULL)
-        progress$set(value=1)
         fastPlot3D(g,x,input$UseAlpha3D,input$alphaLevel3D,input$randomZ)
-        progress$set(value=10)
+        progress$set(value=4)
      }
   })
 
@@ -485,12 +486,13 @@ observe({
   })
 
   getCommunities <- reactive({
-                 progress <- Progress$new(session,min=1,max=10)
+                 progress <- Progress$new(session,min=1,max=4)
                  on.exit(progress$close())
                  progress$set(message = 'Computing communities',
                            detail='This may take a while...')
       set.seed(input$seed)
       g <- gGraph()
+      progress$set(value=2)
       if(is.null(g)) return(NULL)
       if(input$communities =="Fast Greedy"){
          z <- fastgreedy.community(as.undirected(simplify(g)))
@@ -613,12 +615,10 @@ observe({
   })
 
   getCommunitiesMatrix <- reactive({
+        withProgress(message='Computing all communities',
+                     detail='This will take a while...',value=0,
+        {
         g <- gGraph()
-        progress <- Progress$new(session,min=1,max=9)
-        on.exit(progress$close())
-        progress$set(message = 'Computing all communities',
-                  detail='This will take a while...')
-        progress$set(value=1)
          x <- computeLaplacian(g,d=input$Cd,normalize=TRUE)
          if(vcount(g)<=1000){
             z <- Mclust(x,G=input$CG[1]:input$CG[2])
@@ -628,6 +628,7 @@ observe({
                     initialization=list(subset=init))
          }
          lap <- z$classification
+         incProgress(1/10,detail='Laplacian computed 1/11')
          x <- graph.spectral.embedding(g,no=input$Cd)
          if(is.directed(g)) {
             y <- cbind(x$u,x$v)
@@ -642,6 +643,7 @@ observe({
                     initialization=list(subset=init))
          }
          rd <- z$classification
+         incProgress(1.5/10,detail='RDPG computed 2/11')
          x <- graph.spectral.embedding(g,no=25)
          if(is.directed(g)) {
             y <- cbind(x$u,x$v)
@@ -657,24 +659,36 @@ observe({
                     initialization=list(subset=init))
          }
          ts <- z$classification
-        M <- rbind(lap,rd,ts,
-               membership(fastgreedy.community(as.undirected(simplify(g)))),
-                   membership(edge.betweenness.community(g)),
-                   membership(walktrap.community(g)),
-                   membership(leading.eigenvector.community(
-                        as.undirected(simplify(g)))),
-                   membership(label.propagation.community(g)),
-                   membership(spinglass.community(g)),
-                   membership(multilevel.community(  
-                      as.undirected(simplify(g)))),
-                   membership(infomap.community(g)))
+         incProgress(2/10,detail='TSNE computed 3/11')
+         a1 <- membership(fastgreedy.community(as.undirected(simplify(g))))
+         incProgress(3/10,detail='Fast Greedy computed 4/11')
+         a2 <- membership(edge.betweenness.community(g))
+         incProgress(4/10,detail='Edge Betweenness computed 5/11')
+         a3 <- membership(walktrap.community(g))
+         incProgress(5/10,detail='Walktrap computed 6/11')
+         a4 <- membership(leading.eigenvector.community(
+                        as.undirected(simplify(g))))
+         incProgress(6/10,detail='Leading Eigenvector computed 7/11')
+         a5 <- membership(label.propagation.community(g))
+         incProgress(7/10,detail='Label Propagation computed 8/11')
+         a6 <- membership(spinglass.community(g))
+         incProgress(8/10,detail='Spinglass computed 9/11')
+         a7 <- membership(multilevel.community(  
+                      as.undirected(simplify(g))))
+         incProgress(8.5/10,detail='Multilevel computed 10/11')
+         a8 <- membership(infomap.community(g))
+         incProgress(9/10,detail='Infomap computed 11/11')
+         M <- rbind(lap,rd,ts,a1,a2,a3,a4,a5,a6,a7,a8)
      a <- apply(M,1,max)
      rownames(M) <- paste(c("Laplac","RDPG","t-SNE",
                       "Fast","Edge","Walk",
                       "LEigen","LabelP","SpinG","MultiL","InfoM"),a)
      colnames(M) <- V(g)
+      #progress$set(value=10)
+         incProgress(1,detail='Communities computed')
      a <- hclust(eqDist(t(M)),method='ward.D2')
      M[,a$order]
+  })
   })
 
   getHeatmapOrder <- reactive({
@@ -719,11 +733,12 @@ observe({
   getFusionEmbedding <- reactive({
      set.seed(input$seed)
      z <- NULL
-     progress <- Progress$new(session,min=1,max=10)
+     progress <- Progress$new(session,min=1,max=5)
      on.exit(progress$close())
      progress$set(message = 'Computing Embedding and clustering',
                         detail='This may take a while...')
      g <- gGraph()
+     progress$set(value=2)
      if(!is.null(g)){
         atts <- list.vertex.attributes(g)
         if(is.null(atts)){
@@ -738,11 +753,13 @@ observe({
               x <- cbind(x,y)
            }
         }
+        progress$set(value=3)
         if(is.null(x)) return(NULL)
         z <- fuseGraphCovariates(g,x,lambda=input$lambda,k=input$fusek,
                     no=input$Fd,
                     base.matrix=ifelse(input$fusion=="RDPG",
                                        "adjacency","laplacian"))
+        progress$set(value=4)
         if(input$append) z <- cbind(z,x)
         z[is.na(z)] <- 0
      }
@@ -752,11 +769,13 @@ observe({
   output$fusionPlot <- renderPlot({  
      z <- getFusionEmbedding()
      if(!is.null(z)){
-        progress <- Progress$new(session,min=1,max=10)
+        progress <- Progress$new(session,min=1,max=4)
         on.exit(progress$close())
         progress$set(message = 'Computing Clustering',
                            detail='This may take a while...')
+        progress$set(value=2)
         m <- Mclust(z,G=input$FG[1]:input$FG[2])
+        progress$set(value=3)
         plot(z,pch=20,col=m$classification,main=paste(m$G,"clusters"),
              xlab=expression(x[1]),ylab=expression(x[2]))
      }
