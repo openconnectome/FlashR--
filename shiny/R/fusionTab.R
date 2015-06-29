@@ -1,6 +1,6 @@
 fusionTab <- function()
 {
-   tabPanel("Fusion",
+   tabPanel("Fusion UNDER CONSTRUCTION",
       h2("Fusion of graph and vertex attributes and/or covariates."),
       p("Under construction!"),
       p("Currently this does something that isn't quite right and does it incorrectly, no doubt. At some point it will be all rainbows and bunnies. For now, ignore it."),
