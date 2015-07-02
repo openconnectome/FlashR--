@@ -26,13 +26,13 @@ communitiesTab <- function()
             
       ),
       conditionalPanel(
-         condition = "input.fast == false",
+         condition = "input.fast == false && input.dendPlot == false",
              checkboxInput(inputId="markGroups",label="Group the Communities",
                            value=FALSE)
       ),
       p("Click on a vertex to view values."),
       verbatimTextOutput('comm_info'),
-      plotOutput("communityPlot", height="1800px",width="1800px",
+      plotOutput("communityPlot", height="800px",width="800px",
                  click="comm_click"),
       br(),br()
    ),
