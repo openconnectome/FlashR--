@@ -1,6 +1,8 @@
 
-shinyUI(pageWithSidebar(
+shinyUI(fluidPage(
   
+  includeCSS('progress.css'),
+
   ###  Application title
   headerPanel("Graph Explorer"),
   
