@@ -12,7 +12,9 @@ plotGraph <- function(x,g,
                edgeColor,
                useWeights,
                showLegend,
-               color='SkyBlue')
+               color='SkyBlue',
+               markgroups,
+               groups)
 {               
      if(sizeByVar && vertexAttsSize != 'None'){
         size <- get.vertex.attribute(g,vertexAttsSize)
@@ -67,11 +69,20 @@ plotGraph <- function(x,g,
            ec <- ((match(att,uatt)-1) %% 8) + 1
         }
         if(UseAlpha) ec <- alpha(ec,alphaLevel)
-        plot(g,vertex.size=size,vertex.label=vl,
-             vertex.color=color,
-             edge.width=weight,edge.label=el,
-             edge.color=ec,
-             layout=x)
+        if(markgroups){
+           plot(g,vertex.size=size,vertex.label=vl,
+                vertex.color=color,
+                edge.width=weight,edge.label=el,
+                edge.color=ec,
+                mark.groups=groups,
+                layout=x)
+        } else {
+           plot(g,vertex.size=size,vertex.label=vl,
+                vertex.color=color,
+                edge.width=weight,edge.label=el,
+                edge.color=ec,
+                layout=x)
+        }
      }
      if(showLegend){
         n <- nrow(legnd)

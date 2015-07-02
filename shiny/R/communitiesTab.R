@@ -25,6 +25,11 @@ communitiesTab <- function()
                 label="Theta",value=0.5,min=0,max=1,step=0.1)
             
       ),
+      conditionalPanel(
+         condition = "input.fast == false",
+             checkboxInput(inputId="markGroups",label="Group the Communities",
+                           value=FALSE)
+      ),
       p("Click on a vertex to view values."),
       verbatimTextOutput('comm_info'),
       plotOutput("communityPlot", height="1800px",width="1800px",

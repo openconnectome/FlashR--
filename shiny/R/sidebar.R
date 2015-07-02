@@ -27,5 +27,6 @@ makeSidebar <- function()
       min=1,max=1000),
             p("Clicking on `Plotting Parametes' opens/closes a menu of options for the plot."),
             plottingOpts()
+
   )
 }

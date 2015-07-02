@@ -35,6 +35,7 @@ observe({
      } else {
         if(!is.null(input$openconnectome)){
            cat("Graph:",input$openconnectome,"\n")
+           if(input$openconnectome=='Offline') return(NULL)
            file <- openconnectome.dir
            for(i in 1:length(openconnectome.graphs)){
               if(any(openconnectome.graphs[[i]] == input$openconnectome)){
@@ -595,6 +596,7 @@ observe({
          dendPlot(z,labels=labels,main=paste(max(m),"Communities"))
       } else {
          col <- colors.list[((m-1) %% length(colors.list))+1]
+         groups <- sapply(unique(m),function(i) which(m==i))
          plotGraph(x,g,
                sizeByVar=input$sizeByVar,
                vertexAttsSize=input$vertexAttsSize,
@@ -603,6 +605,8 @@ observe({
                vertexAttsColor=input$vertexAttsColor,
                colorByVar=FALSE,
                fast=input$fast,
+               markgroups=input$markGroups,
+               groups=groups,
                UseAlpha=input$UseAlpha,
                alphaLevel=input$alphaLevel,
                edgeLabel=input$edgeLabel,
