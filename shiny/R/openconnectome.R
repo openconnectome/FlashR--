@@ -5,9 +5,12 @@ getOpenConnectome <- function(openconnectome.dir)
    cat("Getting the openconnecto.me list of graphs\n")
    a <- try(scrape(openconnectome.dir),silent=TRUE) 
    if(inherits(a,'try-error')){
-      cat("Could not access openconnecto.me. Using cached data.")
-      load("openConnectomeGraphs.RData")
-      return(openconnectome.graphs)
+      cat("Could not access openconnecto.me.")
+      return(list(worm="Offline"))
+   }
+   if(xpathSApply(a[[1]],'//title',xmlValue)=="403 Forbidden"){
+      cat("Could not access openconnecto.me.")
+      return(list(worm="Offline"))
    }
    ## get the first level of directories -- the species
    dirs <- xpathSApply(a[[1]],"//table//td/a",xmlValue)
