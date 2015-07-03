@@ -27,16 +27,15 @@ makeSidebar <- function()
                p(paste("The state file will be saved in the directory",
                        "set in your browser as the downloads directory",
                        "The file will be an RData file.")),
-               downloadButton('downloadState','Download'),
-		 id='downloadParameters'),id='downloadCollapse'),
+               downloadButton('downloadState','Download')),
+                  id='downloadCollapse'),
 	 bsCollapse(
 		 bsCollapsePanel("Restore State",
                p(paste("Restoring the state restores all the variables",
                        "selected in the GUI with the exception of the",
                        "graph file.")),
               fileInput(inputId="saveFile",label="Restore File",
-                        accept="RData"),
-		 id='uploadParameters'),id='uploadCollapse')
+                        accept="RData")),id='uploadCollapse')
 
   )
 }
