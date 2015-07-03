@@ -28,7 +28,7 @@ makeSidebar <- function()
                        "set in your browser as the downloads directory",
                        "The file will be an RData file.")),
                downloadButton('downloadState','Download'),
-		 id='downloadParameters'),id='downloadCollapse')
+		 id='downloadParameters'),id='downloadCollapse'),
 	 bsCollapse(
 		 bsCollapsePanel("Restore State",
                p(paste("Restoring the state restores all the variables",

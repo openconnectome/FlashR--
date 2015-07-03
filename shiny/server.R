@@ -783,9 +783,7 @@ observe({
   )
 
   observe({
-     cat("loading save state\n")
      variables <<- loadState(session,input$saveFile,variables)
-     cat("CG:",input$CG,"\n")
   })
 
 })
