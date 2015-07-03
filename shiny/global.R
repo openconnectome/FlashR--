@@ -60,7 +60,7 @@ plot.invariants <- c("Degree Distribution",
                 "Page Rank")
 
 
-openconnectome.dir <- "http://openconnecto.me/data/public/graphs/"
+openconnectome.dir <- "http://openconnecto.me/graph-services/download/"
 openconnectome.graphs <- getOpenConnectome(openconnectome.dir)
 
 invariants <- data.frame(Invariant=c(
@@ -123,3 +123,4 @@ communities.list <- c(
    "t-SNE",
    "Spinglass")
 
+variables <-initializeVariables()

@@ -33,12 +33,12 @@ plottingOpts <- function(){
                     condition = "input.plotMethod == 'star'",
                          numericInput(inputId='star.center',
                                       label="Center",min=1,max=1000,
-                                      value=1)
+                                      value=1,step=1)
                ),
                conditionalPanel(
                     condition = "input.plotMethod == 'Laplacian'",
                     checkboxInput(inputId="scaleLaplacian","Scaled Laplacian",
-                                 TRUE)
+                                  value=TRUE)
                ),
                conditionalPanel(
                     condition = "input.plotMethod == 'Kamada Kawai'",
@@ -76,7 +76,7 @@ plottingOpts <- function(){
                conditionalPanel(
                     condition = "input.UseAlpha == true",
                     sliderInput(inputId="alphaLevel",label="Alpha Level",
-                            min=0.0005,max=.25,value=0.1,step=0.0005)
+                            min=0.0005,max=0.25,value=0.1,step=0.0005)
                ),
                bsTooltip(id='fast',
                    title="Fast plotting only plots vertices and straight, single edges. No loops or multiple edges. It is typically faster than the igraph plot, but less flexible.",

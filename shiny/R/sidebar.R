@@ -10,23 +10,33 @@ makeSidebar <- function()
        "particularly ones with lots of attributes.",
        "Zipped graphs (humans) do not seem to load correctly at this time.",
           collapse=" ")),
-  radioButtons(inputId="Source",label="Input Source",
-      choices=c("Local Disk","Open Connectome"),
-      selected="Local Disk"),
-  conditionalPanel(
-           condition = "input.Source == 'Local Disk'",
-              fileInput(inputId="graphFile",label="File",accept="graphml")),
-  conditionalPanel(
-           condition = "input.Source == 'Open Connectome'",
-  selectInput(inputId="openconnectome",
-                                 label="Open Connectome Graph",
-                     choices=openconnectome.graphs,
-                     selected=openconnectome.graphs$worm[[1]],
-                     selectize=TRUE)),
+        fileInput(inputId="graphFile",label="File",accept="graphml"),
   numericInput(inputId='seed',label="Random Number Seed",value=seed,
-      min=1,max=1000),
-            p("Clicking on `Plotting Parametes' opens/closes a menu of options for the plot."),
-            plottingOpts()
+      min=1,max=100000,step=1),
+            p("Clicking on `Plotting Parameters' opens/closes a menu of options for the plot."),
+            plottingOpts(),
+	 bsCollapse(
+		 bsCollapsePanel("Save State",
+           p(paste("Type in a base filename for the saved file.",
+                   "This should be a pure root filename, no directory or",
+                   "extensions.",
+                   "If no filename is given, the default",
+                   "is a file with a unique date/time in the name.")),
+           textInput(inputId='outputfilename',label='Output Base Filename',
+			           value=""),
+               p(paste("The state file will be saved in the directory",
+                       "set in your browser as the downloads directory",
+                       "The file will be an RData file.")),
+               downloadButton('downloadState','Download'),
+		 id='downloadParameters'),id='downloadCollapse')
+	 bsCollapse(
+		 bsCollapsePanel("Restore State",
+               p(paste("Restoring the state restores all the variables",
+                       "selected in the GUI with the exception of the",
+                       "graph file.")),
+              fileInput(inputId="saveFile",label="Restore File",
+                        accept="RData"),
+		 id='uploadParameters'),id='uploadCollapse')
 
   )
 }

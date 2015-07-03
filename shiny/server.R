@@ -4,87 +4,33 @@ shinyServer(function(input, output, session) {
 set.seed(seed)
 
 observe({
-   set.seed(input$seed)
+   if(is.numeric(input$seed))
+      set.seed(input$seed)
 })
    
   gGraph <- reactive({
      g <- NULL
-     if(input$Source=='Local Disk'){
-        if(!is.null(input$graphFile)){
-           format <- "graphml"
-           ex <- rev(strsplit(basename(input$graphFile$name),
-                         split="\\.")[[1]])[[1]]
-           cat("File Extension:",ex,"\n")
-           if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
-                        "graphml", "dimacs", "graphdb", "gml", "dl")){
-              format <- ex
-            }
-            cat("name:",input$graphFile$name,"\n")
-            cat("datapath:",input$graphFile$datapath,"\n")
-            if(grepl('\\.zip$',input$graphFile$name)){
-              tf <- input$graphFile$datapath
-              gr <- sub("\\.zip$","",input$graphFile$name)
-              t1 <- system.time(g <- read.graph(unz(tf,gr),format=format))
-            } else {
-              t1 <- system.time(g <- read.graph(input$graphFile$datapath,
-                    format=format))
-            }
-           cat("File read\n")
-           print(t1)
-        }
-     } else {
-        if(!is.null(input$openconnectome)){
-           cat("Graph:",input$openconnectome,"\n")
-           if(input$openconnectome=='Offline') return(NULL)
-           file <- openconnectome.dir
-           for(i in 1:length(openconnectome.graphs)){
-              if(any(openconnectome.graphs[[i]] == input$openconnectome)){
-                 file <- paste(file,names(openconnectome.graphs)[i],"/",
-                               input$openconnectome,sep="")
-                 break
-              }
-           }
-           cat("Getting",file,"\n")
-           format <- "graphml"
-           ex <- rev(strsplit(gsub(".zip","",input$openconnectome),
-                              split="\\.")[[1]])[[1]]
-           cat("File Extension:",ex,"\n")
-           if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
-                        "graphml", "dimacs", "graphdb", "gml", "dl")){
-              format <- ex
-            }
-           t1 <- system.time( 
-              if(grepl("\\.zip$",file)){
-                 withProgress(message='Download in progress',
-                     detail='This will take a while...',value=0,
-                 {
-                 incProgress(1/10)
-                 tf <- paste(tempfile(),"zip",sep='.')
-                 t2 <- system.time(download.file(file,tf))
-                 print(t2)
-                 wd <- getwd()
-                 setwd(tempdir())
-                 gr <- sub("\\.zip$","",input$openconnectome)
-                 incProgress(2/10,detail = 'Unzipping graph')
-                 cat("unzipping",tf,"extracting",gr,"\n")
-                 unzip(tf,gr)
-                 incProgress(2/10,detail = 'graph unzipped')
-                 unlink(tf)
-                 incProgress(7/10,detail = 'reading graph')
-                 cat("reading",gr,"\n")
-                 t2 <- system.time(g <- read.graph(gr,format=format))
-                 print(t2)
-                 unlink(gr)
-                 setwd(wd)
-                 incProgress(10/10,detail = 'done')
-                 })
-              } else {
-                 g <- read.graph(file,format=format)
-              }
-           )
-              cat("File read\n")
-              print(t1)
-        }
+     if(!is.null(input$graphFile)){
+        format <- "graphml"
+        ex <- rev(strsplit(basename(input$graphFile$name),
+                      split="\\.")[[1]])[[1]]
+        cat("File Extension:",ex,"\n")
+        if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
+                     "graphml", "dimacs", "graphdb", "gml", "dl")){
+           format <- ex
+         }
+         cat("name:",input$graphFile$name,"\n")
+         cat("datapath:",input$graphFile$datapath,"\n")
+         if(grepl('\\.zip$',input$graphFile$name)){
+           tf <- input$graphFile$datapath
+           gr <- sub("\\.zip$","",input$graphFile$name)
+           t1 <- system.time(g <- read.graph(unz(tf,gr),format=format))
+         } else {
+           t1 <- system.time(g <- read.graph(input$graphFile$datapath,
+                 format=format))
+         }
+        cat("File read\n")
+        print(t1)
      }
      if(!is.null(g)){
         vertexLabels <- union("None",list.vertex.attributes(g))
@@ -98,6 +44,21 @@ observe({
             choices=c("None","Community",vertexLabels),selected="Community")
         updateSelectInput(session,inputId="vertexAtts",
             choices=vertexLabels,selected="None")
+        variables$select <- selectSave(variables$select,
+            inputId="vertexLabel",
+            choices=vertexLabels,selected="None")
+        variables$select <- selectSave(variables$select,
+            inputId="vertexAttsSize",
+            choices=vertexLabels,selected="None")
+        variables$select <- selectSave(variables$select,
+            inputId="vertexAttsColor",
+            choices=vertexLabels,selected="None")
+        variables$select <- selectSave(variables$select,
+            inputId="CvertexLabel",
+            choices=c("None","Community",vertexLabels),selected="Community")
+        variables$select <- selectSave(variables$select,
+            inputId="vertexAtts",
+            choices=vertexLabels,selected="None")
         vl <- vertexLabels[-grep("None",vertexLabels)]
         if(length(vl)>0){
            updateRadioButtons(session,inputId="xcoordinates",
@@ -105,6 +66,12 @@ observe({
            updateRadioButtons(session,inputId="ycoordinates",
                choices=vl,selected=vl[min(2,length(vl))])
            updateRadioButtons(session,inputId="zcoordinates",
+               choices=vl,selected=vl[min(3,length(vl))])
+           variables$radio <- selectSave(variables$radio,inputId="xcoordinates",
+               choices=vl,selected=vl[1])
+           variables$radio <- selectSave(variables$radio,inputId="ycoordinates",
+               choices=vl,selected=vl[min(2,length(vl))])
+           variables$radio <- selectSave(variables$radio,inputId="zcoordinates",
                choices=vl,selected=vl[min(3,length(vl))])
         }
         edgeLabels <- union("None",list.edge.attributes(g))
@@ -114,9 +81,17 @@ observe({
             choices=edgeLabels,selected="None")
         updateSelectInput(session,inputId="edgeAtts",
             choices=edgeLabels,selected="None")
+        variables$select <- selectSave(variables$select,inputId="edgeLabel",
+            choices=edgeLabels,selected="None")
+        variables$select <- selectSave(variables$select,inputId="edgeColor",
+            choices=edgeLabels,selected="None")
+        variables$select <- selectSave(variables$select,inputId="edgeAtts",
+            choices=edgeLabels,selected="None")
         m <- max(3,floor(vcount(g)/40))
         updateSliderInput(session,inputId="subsample",
             min=2,max=m,value=min(4,m-1),step=1)
+        variables$slider <- sliderSave(variables$slider,inputId="subsample",
+            min=2,max=m,value=min(4,m-1),upper.value=NA,step=1)
      }
      g
   })
@@ -147,6 +122,7 @@ observe({
   })
 
   getSubsampled <- reactive({
+     set.seed(input$seed)
      g <- gGraph()
      if(!is.null(g)){
         A <- get.adjacency(g)
@@ -513,6 +489,7 @@ observe({
          z <- walktrap.community(g)
       } else if(input$communities=="Laplacian"){
          x <- computeLaplacian(g,d=input$Cd,normalize=TRUE)
+         cat("Mclust model size range:",input$CG,"\nSeed:",input$seed,"\n")
          if(vcount(g)<=1000){
             z <- Mclust(x,G=input$CG[1]:input$CG[2])
          } else {
@@ -555,70 +532,74 @@ observe({
 
   ### Generate plot output
   output$communityPlot <- renderPlot({  
-      dp <- input$dendPlot
-      if(input$communities == "Infomap" ||
-         input$communities == "Spinglass" ||
-         input$communities == "RDPG" ||
-         input$communities == "t-SNE" ||
-         input$communities == "Multilevel" ||
-         input$communities == "Label Propagation" ||
-         input$communities == "Leading Eigenvalue" ||
-         input$communities == "Laplacian" 
-      ){
-         updateCheckboxInput(session,inputId="dendPlot",value=FALSE)
-         dp <- FALSE
-         warning("Cannot dendPlot this community type\n")
-      }
-      g <- gGraph()
-      if(is.null(g)) return(NULL)
-      x <- layout()
-      if(is.null(x)) return(NULL)
-      cat("Layout (community):",dim(x),"|V|:",vcount(g),"\n")
-      z <- getCommunities()
-      if(input$communities == "RDPG" ||
-         input$communities == "t-SNE" ||
-         input$communities == "Laplacian" 
-      ){
-         m <- z$classification
-      } else {
-         m <- membership(z)
-      }
-      if(input$usecomm) x[,1] <- m
-      vl <- input$vertexLabel
-      if(vl == 'None') {
-         labels <- NULL
-      } else if(vl == 'Community'){
-         labels <- m
-      } else {
-         labels <- get.vertex.attribute(g,vl)
-      }
-      if(dp){
-         dendPlot(z,labels=labels,main=paste(max(m),"Communities"))
-      } else {
-         col <- colors.list[((m-1) %% length(colors.list))+1]
-         groups <- sapply(unique(m),function(i) which(m==i))
-         plotGraph(x,g,
-               sizeByVar=input$sizeByVar,
-               vertexAttsSize=input$vertexAttsSize,
-               vertexLabel=input$vertexLabel,
-               vertexSize=input$vertexSize,
-               vertexAttsColor=input$vertexAttsColor,
-               colorByVar=FALSE,
-               fast=input$fast,
-               markgroups=input$markGroups,
-               groups=groups,
-               UseAlpha=input$UseAlpha,
-               alphaLevel=input$alphaLevel,
-               edgeLabel=input$edgeLabel,
-               edgeColor=input$edgeColor,
-               useWeights=input$useWeights,
-               showLegend=FALSE,
-               color=col)
-              title(paste(max(m),"Communities"))
-      }
+   dp <- input$dendPlot
+   if(dp &&
+      (input$communities == "Infomap" ||
+      input$communities == "Spinglass" ||
+      input$communities == "RDPG" ||
+      input$communities == "t-SNE" ||
+      input$communities == "Multilevel" ||
+      input$communities == "Label Propagation" ||
+      input$communities == "Leading Eigenvalue" ||
+      input$communities == "Laplacian")
+   ){
+      updateCheckboxInput(session,inputId="dendPlot",value=FALSE)
+      variables$checkbox <- checkboxSave(variables$checkbox,
+          inputId="dendPlot",value=FALSE)
+      dp <- FALSE
+      warning("Cannot dendPlot this community type\n")
+   }
+   g <- gGraph()
+   if(is.null(g)) return(NULL)
+   x <- layout()
+   if(is.null(x)) return(NULL)
+   cat("Layout (community):",dim(x),"|V|:",vcount(g),"\n")
+   z <- getCommunities()
+   if(input$communities == "RDPG" ||
+      input$communities == "t-SNE" ||
+      input$communities == "Laplacian" 
+   ){
+      m <- z$classification
+   } else {
+      m <- membership(z)
+   }
+   if(input$usecomm) x[,1] <- m
+   vl <- input$vertexLabel
+   if(vl == 'None') {
+      labels <- NULL
+   } else if(vl == 'Community'){
+      labels <- m
+   } else {
+      labels <- get.vertex.attribute(g,vl)
+   }
+   if(dp){
+      dendPlot(z,labels=labels,main=paste(max(m),"Communities"))
+   } else {
+      col <- colors.list[((m-1) %% length(colors.list))+1]
+      groups <- sapply(unique(m),function(i) which(m==i))
+      plotGraph(x,g,
+            sizeByVar=input$sizeByVar,
+            vertexAttsSize=input$vertexAttsSize,
+            vertexLabel=input$vertexLabel,
+            vertexSize=input$vertexSize,
+            vertexAttsColor=input$vertexAttsColor,
+            colorByVar=FALSE,
+            fast=input$fast,
+            markgroups=input$markGroups,
+            groups=groups,
+            UseAlpha=input$UseAlpha,
+            alphaLevel=input$alphaLevel,
+            edgeLabel=input$edgeLabel,
+            edgeColor=input$edgeColor,
+            useWeights=input$useWeights,
+            showLegend=FALSE,
+            color=col)
+           title(paste(max(m),"Communities"))
+   }
   })
 
   getCommunitiesMatrix <- reactive({
+     set.seed(input$seed)
         withProgress(message='Computing all communities',
                      detail='This will take a while...',value=0,
         {
@@ -783,6 +764,28 @@ observe({
         plot(z,pch=20,col=m$classification,main=paste(m$G,"clusters"),
              xlab=expression(x[1]),ylab=expression(x[2]))
      }
+  })
+  output$downloadState <- downloadHandler(
+    filename = function() {
+                     if(input$outputfilename==''){
+                             f <- paste('ge_state-', Sys.time(),sep='')
+                             f <- gsub(" [[:upper:]]{1,}$","",f)
+                             f <- gsub(":|-|\\.|\\s","_",f)
+                     } else {
+                        f <- input$outputfilename
+                     }
+                     paste(f,'.RData',sep='')
+    },
+    content = function(con) {
+        variables <- isolate(saveState(input))
+        save(variables, file=con)
+    }
+  )
+
+  observe({
+     cat("loading save state\n")
+     variables <<- loadState(session,input$saveFile,variables)
+     cat("CG:",input$CG,"\n")
   })
 
 })
