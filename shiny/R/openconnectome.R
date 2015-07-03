@@ -2,6 +2,7 @@
 
 getOpenConnectome <- function(openconnectome.dir)
 {
+   return(list(worm="Offline"))
    cat("Getting the openconnecto.me list of graphs\n")
    a <- try(scrape(openconnectome.dir),silent=TRUE) 
    if(inherits(a,'try-error')){
