@@ -18,8 +18,8 @@ shinyUI(fluidPage(
        graphplotTab(),
        ## Graph invariants and statistics
        invTab(),
-       communitiesTab(),
-       fusionTab()
+       communitiesTab()#,
+       #fusionTab()
    )
   )
 ))

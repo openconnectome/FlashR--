@@ -12,6 +12,7 @@ library(DT)
 library(scales)
 library(mclust)
 library(Rtsne)
+library(corrplot)
 #library(dendextend)
 library(fpc)
 #library(FlashGraphR)
@@ -124,3 +125,14 @@ communities.list <- c(
    "Spinglass")
 
 variables <-initializeVariables()
+
+famous.graphs <- c("Bull","Chvatal","Coxeter","Cubical",
+                   "Diamond","Dodecahedron","Folkman",
+						 "Franklin","Frucht","Grotzsch",
+						 "Heawood","Herschel","House","HouseX",
+						 "Icosahedral,","Krackhardt","Levi",
+						 "McGee","Meredith","Noperfectmatching",
+						 "Nonline","Octahedral","Petersen",
+						 "Robertson","Smallestcyclicgroup",
+						 "Tetrahedron","Thomassen","Tutte",
+						 "Uniquely3colorable","Walther","Zachary")

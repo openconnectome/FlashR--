@@ -6,7 +6,6 @@ communitiesTab <- function()
       tabPanel("Single Algorithm",
       selectInput(inputId="communities",label="Communities to Compute",
                    choices=communities.list,selected="Fast Greedy"),
-      checkboxInput(inputId='usecomm',label='Use community for x-axis',FALSE),
       conditionalPanel(
          condition = "input.communities == 'Walktrap' || input.communities == 'Fast Greedy' || input.communities == 'Edge Betweenness'",
       checkboxInput(inputId='dendPlot',label='Plot Dendrogram',FALSE)),
@@ -34,6 +33,7 @@ communitiesTab <- function()
       verbatimTextOutput('comm_info'),
       plotOutput("communityPlot", height="800px",width="800px",
                  click="comm_click"),
+      checkboxInput(inputId='usecomm',label='Use community for x-axis',FALSE),
       br(),br()
    ),
    tabPanel("Compare All Algorithms",

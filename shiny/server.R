@@ -10,28 +10,124 @@ observe({
    
   gGraph <- reactive({
      g <- NULL
-     if(!is.null(input$graphFile)){
-        format <- "graphml"
-        ex <- rev(strsplit(basename(input$graphFile$name),
-                      split="\\.")[[1]])[[1]]
-        cat("File Extension:",ex,"\n")
-        if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
-                     "graphml", "dimacs", "graphdb", "gml", "dl")){
-           format <- ex
-         }
-         cat("name:",input$graphFile$name,"\n")
-         cat("datapath:",input$graphFile$datapath,"\n")
-         if(grepl('\\.zip$',input$graphFile$name)){
-           tf <- input$graphFile$datapath
-           gr <- sub("\\.zip$","",input$graphFile$name)
-           t1 <- system.time(g <- read.graph(unz(tf,gr),format=format))
-         } else {
-           t1 <- system.time(g <- read.graph(input$graphFile$datapath,
-                 format=format))
-         }
-        cat("File read\n")
-        print(t1)
-     }
+	  if(input$whereGraph=='Generate'){
+		  if(input$GenerateGraph>0){
+			  isolate({
+				  cat("Generating:",input$genMethod,"graph\n")
+				  print(system.time({
+					  parameters <- list(n=input$genN,directed=input$genDirected)
+					  if(input$genMethod=='Erdos Renyi'){
+						  parameters$p <- input$genERP
+					  } else if(input$genMethod=='K Regular'){
+						  parameters$k <- input$genKRK
+					  } else if(input$genMethod=='Famous'){
+						  parameters$famous <- input$genFamous
+					  } else if(input$genMethod=='Atlas'){
+						  parameters$atlas <- input$genAtlas
+					  } else if(input$genMethod=='Wheel'){
+						  parameters$mode <- input$genMode
+					  } else if(input$genMethod=='Barabasi'){
+						  parameters$power <- input$genBPower
+						  parameters$m <- input$genBM
+						  parameters$zero <- input$genBZero
+					  } else if(input$genMethod=='Complete Bipartite'){
+						  parameters$n2 <- input$genCBPn
+						  parameters$mode <- input$genMode
+						  if(parameters$directed==FALSE ||
+						     parameters$mode=='mutual') parameters$mode <- 'all'
+					  } else if(input$genMethod=='Random Bipartite'){
+						  parameters$n2 <- input$genRBPn
+						  parameters$p <- input$genRBPP
+						  parameters$mode <- input$genMode
+						  if(parameters$directed==FALSE ||
+						     parameters$mode=='mutual') parameters$mode <- 'all'
+					  } else if(input$genMethod=='Aging Prefatt'){
+					     parameters$time.window <- input$genAPtimewindow
+					     parameters$deg.coef <- input$genAPdegcoef
+					     parameters$age.coef <- input$genAPagecoef
+					     parameters$aging.bin <- input$genAPagingbin
+					     parameters$aging.exp <- input$genAPagingexp
+					     parameters$pa.exp <- input$genAPpaexp
+					     parameters$m <- input$genAPm
+					     parameters$zero.deg.appeal <- input$genAPzerodeg
+					     parameters$zero.age.appeal <- input$genAPzeroage
+					  } else if(input$genMethod=='de Bruijn'){
+					     parameters$dbn <- input$gendBn
+					     parameters$m <- input$gendBm
+					  } else if(input$genMethod=='Stochastic Block Model'){
+						  k <- input$genSBMk
+						  P <- matrix(runif(k*k,0,0.5),nrow=k)
+						  if(!input$genDirected){
+							  P[lower.tri(P)] <- t(P[upper.tri(P)])
+						  }
+					     if(input$genDiagDom){
+						     diag(P) <- runif(input$genSBMk,0.5,1)
+						  } 
+						  parameters$P <- P
+						  sizes <- rep(floor(input$genN/k),k)
+						  sizes[k] <- sizes[k]+(input$genN-sum(sizes))
+						  parameters$sizes <- sizes
+					  } else if(input$genMethod=='Kautz'){
+					     parameters$kn <- input$genKn
+					     parameters$m <- input$genKm
+					  } else if(input$genMethod=='Forest Fire'){
+					     parameters$fw.prob <- input$genFFfw
+					     parameters$bw.factor <- input$genFFbf
+					     parameters$ambs <- input$genFFAmbs
+					  } else if(input$genMethod=='Tree'){
+					        parameters$children <- input$genTreeC
+					  } else if(input$genMethod=='Growing Random Graph'){
+						  parameters$m <- input$genGROWM
+						  parameters$citation <- input$genGROWCitation
+					  } else if(input$genMethod=='Watts Strogatz'){
+						  parameters$dim <- input$genWSDim
+						  parameters$size <- input$genWSSize
+						  parameters$nei <- input$genWSNei
+						  parameters$p <- input$genWSP
+					  } else if(input$genMethod=='Geometric Random Graph'){
+						  parameters$torus <- input$genGRGTorus
+						  parameters$coords <- input$genGRGcoords
+						  parameters$radius <- input$genGRGRadius
+					  } else if(input$genMethod=='Barabasi'){
+						  parameters$power <- input$genBPower
+						  parameters$m <- input$genBM
+						  parameters$zero <- input$genBZero
+					  } else if(input$genMethod=='Star'){
+						  parameters$mode <- input$genMode
+					  }
+					  if(parameters$directed==FALSE && 
+					     input$genMethod != 'Random Bipartite' &&
+					     input$genMethod != 'Complete Bipartite') {
+						  parameters$mode <- 'undirected'
+					  }
+					  g <- generateGraph(input$genMethod,parameters)
+				  }))
+			  })
+		  }
+	  } else {
+		  if(!is.null(input$graphFile)){
+			  format <- "graphml"
+			  ex <- rev(strsplit(basename(input$graphFile$name),
+								 split="\\.")[[1]])[[1]]
+			  cat("File Extension:",ex,"\n")
+			  if(ex %in% c("edgelist", "pajek", "ncol", "lgl",
+								"graphml", "dimacs", "graphdb", "gml", "dl")){
+				  format <- ex
+				}
+				cat("name:",input$graphFile$name,"\n")
+				cat("datapath:",input$graphFile$datapath,"\n")
+				if(grepl('\\.zip$',input$graphFile$name)){
+				  tf <- input$graphFile$datapath
+				  gr <- sub("\\.zip$","",input$graphFile$name)
+				  t1 <- system.time(g <- read.graph(unz(tf,gr),format=format))
+				} else {
+				  t1 <- system.time(g <- read.graph(input$graphFile$datapath,
+						  format=format))
+				}
+			  cat("File read\n")
+			  print(t1)
+		  }
+	  }
      if(!is.null(g)){
         vertexLabels <- union("None",list.vertex.attributes(g))
         updateSelectInput(session,inputId="vertexLabel",
@@ -288,19 +384,38 @@ observe({
      if(!is.null(g)){
         if(input$vertexAtts != 'None'){
            a <- get.vertex.attribute(g,input$vertexAtts)
-           if(class(a)=='numeric'){
-              hist(a,xlab=input$vertexAtts,main="")
-           } else {
-              ta <- table(a)
-              ta <- sort(ta,decreasing=TRUE)
-              m <- min(30,length(ta))
-              ta <- rev(ta[1:m])
-              mar <- par('mar')
-              par(mar=c(2,7,2,2))
-              barplot(ta,horiz=TRUE,names=names(ta),xlab="",
-                      las=2,cex.axis=.75)
-              par(mar=mar)
-           }
+			  if(input$VACor==TRUE){
+				  edges <- get.edgelist(g,names=FALSE)
+				  if(class(a)=='numeric'){
+					  par(pty='s')
+				     plot(a[edges[,1]],
+					       a[edges[,2]],xlab="From",ylab="To",
+					       pch=20)
+				  } else {
+					  ta <- table(a[edges[,1]],a[edges[,2]])
+					  xl <- max(dim(ta),na.rm=TRUE)
+					  par(pty='s')
+					  image(1:nrow(ta),1:ncol(ta),
+					        ta,xlab="From",ylab="To",#col=gray((0:xl)/xl),
+					        axes=FALSE)
+				     axis(1,at=1:nrow(ta),labels=rownames(ta),las=2)
+				     axis(2,at=1:ncol(ta),labels=colnames(ta),las=2)
+				  }
+			  } else {
+				  if(class(a)=='numeric'){
+					  hist(a,xlab=input$vertexAtts,main="")
+				  } else {
+					  ta <- table(a)
+					  ta <- sort(ta,decreasing=TRUE)
+					  m <- min(30,length(ta))
+					  ta <- rev(ta[1:m])
+					  mar <- par('mar')
+					  par(mar=c(2,7,2,2))
+					  barplot(ta,horiz=TRUE,names=names(ta),xlab="",
+								 las=2,cex.axis=.75)
+					  par(mar=mar)
+				  }
+			  }
         } 
      } 
   })
@@ -785,5 +900,42 @@ observe({
   observe({
      variables <<- loadState(session,input$saveFile,variables)
   })
+
+  getAttData <- reactive({
+     g <- gGraph()
+     data <- NULL
+     if(!is.null(g)){
+        data <- attribute.conversion(g,list.vertex.attributes(g))
+     }
+     data
+  })
+  
+  getVCor <- reactive({
+     vc <- NULL
+     g <- gGraph()
+     if(!is.null(g)){
+        z <- getAttData()
+        if(!is.null(z)){
+           data <- z$data
+           vn <- z$varnames
+           vc <- attribute.correlation(g,data,vn)
+        }
+     }
+     vc
+  })
+  
+  output$plotcor <- renderPlot({  
+     vc <- getVCor()
+     if(!is.null(vc)){
+        corrplot(vc)
+     }
+  })
+  output$plotecor <- renderPlot({  
+     vc <- getVCor()
+     if(!is.null(vc)){
+        corrplot(vc$edge.cor)
+     }
+  })
+
 
 })
