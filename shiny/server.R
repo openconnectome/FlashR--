@@ -15,7 +15,8 @@ observe({
 			  isolate({
 				  cat("Generating:",input$genMethod,"graph\n")
 				  print(system.time({
-					  parameters <- list(n=input$genN,directed=input$genDirected)
+					  parameters <- list(n=input$genN,directed=input$genDirected,
+					                     seed=input$seed)
 					  if(input$genMethod=='Erdos Renyi'){
 						  parameters$p <- input$genERP
 					  } else if(input$genMethod=='K Regular'){
@@ -67,6 +68,10 @@ observe({
 						  sizes <- rep(floor(input$genN/k),k)
 						  sizes[k] <- sizes[k]+(input$genN-sum(sizes))
 						  parameters$sizes <- sizes
+					  } else if(input$genMethod=='Random Dot Product'){
+					     parameters$dim <- input$genRDPDim
+						  parameters$alpha <- rep(1,parameters$dim)
+						  parameters$Vect <- input$genRDPMethod
 					  } else if(input$genMethod=='Kautz'){
 					     parameters$kn <- input$genKn
 					     parameters$m <- input$genKm
@@ -346,20 +351,22 @@ observe({
         x <- layout()
         if(is.null(x)) return(NULL)
         cat("Layout (plot):",dim(x),vcount(g),"\n")
-        plotGraph(x,g,
-               input$sizeByVar,
-               input$vertexAttsSize,
-               input$vertexLabel,
-               input$vertexSize,
-               input$vertexAttsColor,
-               input$colorByVar,
-               input$fast,
-               input$UseAlpha,
-               input$alphaLevel,
-               input$edgeLabel,
-               input$edgeColor,
-               input$useWeights,
-               input$showLegend)
+      plotGraph(x,g,
+            sizeByVar=input$sizeByVar,
+            vertexAttsSize=input$vertexAttsSize,
+            vertexLabel=input$vertexLabel,
+            vertexSize=input$vertexSize,
+            vertexAttsColor=input$vertexAttsColor,
+            colorByVar=FALSE,
+            fast=input$fast,
+            markgroups=input$markGroups,
+            groups=groups,
+            UseAlpha=input$UseAlpha,
+            alphaLevel=input$alphaLevel,
+            edgeLabel=input$edgeLabel,
+            edgeColor=input$edgeColor,
+            useWeights=input$useWeights,
+            showLegend=input$showLegend)
      }
   })
 

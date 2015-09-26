@@ -90,6 +90,14 @@ generateGraph <- function(genMethod,parameters)
 									 p=parameters$p,
 									 directed=directed,
 									 mode=parameters$mode)
+	} else if(genMethod=='Random Dot Product'){
+		if(parameters$Vect=='Dirichlet'){
+		   vects <- sample_dirichlet(n,parameters$alpha)
+		} else {
+		   vects <- sample_sphere_volume(n=n,dim=parameters$dim)
+		}
+	   g <- sample_dot_product(vects,
+									 directed=directed)
 	} else if(genMethod=='Famous'){
 	   g <- make_graph(parameters$famous)
 	} else if(genMethod=='de Bruijn'){

@@ -5,6 +5,7 @@ generateSidebar <- function()
 	            label="Graph Generation Method",
 					 choices=c('Erdos Renyi',
 									'Barabasi',
+									'Random Dot Product',
 									'K Regular',
 									'Ring',
 									'Star',
@@ -77,6 +78,14 @@ generateParameters <- function()
 				  sliderInput(inputId='genCBPn',label='n2',
 				              min=2,max=100,
 				              value=1,step=1)),
+		     conditionalPanel(
+			     condition="input.genMethod=='Random Dot Product'",
+				  radioButtons(inputId='genRDPMethod',label='Vector Generation',
+				               choices=c("Dirichlet","Sphere"),
+									selected="Dirichlet"),
+				  sliderInput(inputId='genRDPDim',label='Dimension',
+								  min=1,max=10,
+								  value=2,step=1)),
 		     conditionalPanel(
 			     condition="input.genMethod=='Forest Fire'",
 				  sliderInput(inputId='genFFfw',label='Forward Probability',
