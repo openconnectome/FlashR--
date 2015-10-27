@@ -1,0 +1,13 @@
+Package: FlashR
+Type: Package
+Title: FlashR Big-Graph Analytics Toolkit
+Version: 0.1
+Date: 2015-09-14
+Authors@R: person("Gregory", "Kiar", email = "gkiar@jhu.edu", role = c("aut", "cre"))
+Description: FlashR combines statistical theory and analysis techniques and
+    massive graph processing, leveraging the FlashGraph tool, to enable in-
+    depth statistical analysis of large networks which were previously impossible
+    to process.
+License: Apache 2.0
+LazyData: TRUE
+Suggests: testthat

@@ -11,12 +11,12 @@ procrustes <- function(X,Y, type = "I", normFlag=FALSE) {
     X <- X/sqrt(tX)
     Y <- Y/sqrt(tY)
   }
-  
+
   tmp <- t(X) %*% Y
   tmp.svd <- svd(tmp)
   W <- tmp.svd$u %*% t(tmp.svd$v)
   err <- norm(X%*%W - Y, type = "F")
   if (normFlag) err <- err / (computeCX(X) + computeCX(Y))
-  
+
   return(list(error = err, W = W))
 }
