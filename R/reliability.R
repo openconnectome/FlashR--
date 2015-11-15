@@ -20,6 +20,22 @@ rdf <- function(dist, ids, scans=2) {
   return(rdf)
 }
 
-mnr <- function(rdfs){
-  mnr <- mean(rdfs[!is.nan(rdfs)])
+mnr <- function(rdf, remove_outliers=TRUE, thresh=0, output=FALSE) {
+  if (remove_outliers) {
+    mnr <- mean(rdf[which(rdf[!is.nan(rdf)] > thresh)])
+    ol <- length(which(rdf<thresh))
+    if (output) {
+      print(paste('Graphs with reliability <',thresh,'(outliers):', ol))
+    }
+  } else {
+    ol <- 0
+    mnr <- mean(rdf[!is.nan(rdf)])
+  }
+  nopair <- length(rdf[is.nan(rdf)])
+  if (output) {
+    print(paste('Graphs with unique ids:',nopair))
+    print(paste('Graphs available for reliability analysis:', length(rdf)-ol-nopair))
+    print(paste('MNR:', mnr))
+  }
+  return(mnr)
 }
