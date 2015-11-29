@@ -17,7 +17,7 @@ rdf <- function(dist, ids, scans=2) {
       }
     }
   }
-  return(rdf)
+  return(rdf[1:count-1])
 }
 
 mnr <- function(rdf, remove_outliers=TRUE, thresh=0, output=FALSE) {
