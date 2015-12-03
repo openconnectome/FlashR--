@@ -1,12 +1,22 @@
-rdf <- function(dist, ids, scans=2) {
+rdf <- function(dist, ids) {
   N <- dim(dist)[1]
   if (is.null((N))) {
     stop('Invalid datatype for N')
   }
+  
+  uniqids <- unique(as.character(ids))
+  countvec <- vector(mode="numeric",length=length(uniqids))
+  
+  for (i in 1:length(uniqids)) {
+    countvec[i] <- sum(grepl(uniqids[i], ids))
+  }
+  
+  scans <- max(countvec)
   rdf <- array(NaN, N*(scans-1))
+  
   count <- 1
   for (i in 1:N) {
-    ind <- which(ids==ids[i])
+    ind <- which(grepl(ids[i],ids))
     for (j in ind) {
       if (j != i) {
         di <- dist[i,]
